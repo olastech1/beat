@@ -247,10 +247,32 @@
                   <option>F# Minor</option><option>G Minor</option><option>G Major</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label>Base Price ($)</label>
-                <input type="number" id="up-price" placeholder="29.99" min="0" step="0.01">
+
+              <!-- License Pricing -->
+              <div class="form-group form-group-full" style="margin-top:0.5rem">
+                <label style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem">💰 License Pricing <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem">— set your own prices for each tier</span></label>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:0.75rem">
+                  <div>
+                    <label style="font-size:0.78rem;color:var(--text-secondary)">🎵 MP3 Lease ($)</label>
+                    <input type="number" id="up-price-mp3" placeholder="29.99" min="1" step="0.01" oninput="autoFillPrices()">
+                  </div>
+                  <div>
+                    <label style="font-size:0.78rem;color:var(--text-secondary)">🎧 WAV + MP3 ($)</label>
+                    <input type="number" id="up-price-wav" placeholder="59.99" min="1" step="0.01">
+                  </div>
+                  <div>
+                    <label style="font-size:0.78rem;color:var(--text-secondary)">♾️ Unlimited ($)</label>
+                    <input type="number" id="up-price-unlimited" placeholder="99.99" min="1" step="0.01">
+                  </div>
+                  <div>
+                    <label style="font-size:0.78rem;color:var(--text-secondary)">👑 Exclusive ($)</label>
+                    <input type="number" id="up-price-exclusive" placeholder="299.99" min="1" step="0.01">
+                  </div>
+                </div>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Leave blank to use default multipliers (1×, 2×, 4×, 10×). MP3 price = your base beat price.</p>
               </div>
+              <!-- Hidden: keep up-price for backward compat -->
+              <input type="hidden" id="up-price">
               <div class="form-group">
                 <label>Tags (comma separated)</label>
                 <input type="text" id="up-tags" placeholder="dark, melodic, hard">
@@ -732,6 +754,21 @@ function handleCoverPreview(input) {
   }
 }
 
+// Auto-fill other license prices when MP3 price changes
+function autoFillPrices() {
+  const mp3 = parseFloat(document.getElementById("up-price-mp3").value);
+  if (!mp3 || mp3 <= 0) return;
+  // Only auto-fill if user hasn't manually entered values
+  const wavEl = document.getElementById("up-price-wav");
+  const unlEl = document.getElementById("up-price-unlimited");
+  const excEl = document.getElementById("up-price-exclusive");
+  if (!wavEl.value) wavEl.placeholder = (mp3 * 2).toFixed(2);
+  if (!unlEl.value) unlEl.placeholder = (mp3 * 4).toFixed(2);
+  if (!excEl.value) excEl.placeholder = (mp3 * 10).toFixed(2);
+  // Set the hidden base price
+  document.getElementById("up-price").value = mp3;
+}
+
 document.getElementById("upload-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn   = e.target.querySelector("button[type=submit]");
@@ -748,12 +785,19 @@ document.getElementById("upload-form").addEventListener("submit", async (e) => {
     return;
   }
 
+  // Read license prices
+  const mp3Price  = parseFloat(document.getElementById("up-price-mp3").value) || 29.99;
+  const wavPrice  = parseFloat(document.getElementById("up-price-wav").value) || mp3Price * 2;
+  const unlPrice  = parseFloat(document.getElementById("up-price-unlimited").value) || mp3Price * 4;
+  const excPrice  = parseFloat(document.getElementById("up-price-exclusive").value) || mp3Price * 10;
+
   btn.disabled = true;
 
   const steps = [
     coverFile ? "Uploading cover art…" : null,
     "Uploading audio file…",
     "Saving beat…",
+    "Creating licenses…",
   ].filter(Boolean);
   let stepIdx = 0;
   const stepInterval = setInterval(() => {
@@ -767,7 +811,7 @@ document.getElementById("upload-form").addEventListener("submit", async (e) => {
       genre:       document.getElementById("up-genre").value,
       bpm:         parseInt(document.getElementById("up-bpm").value) || null,
       key:         document.getElementById("up-key").value,
-      price:       parseFloat(document.getElementById("up-price").value) || 29.99,
+      price:       mp3Price,
       description: document.getElementById("up-desc").value.trim(),
       tags:        document.getElementById("up-tags").value.split(",").map(t=>t.trim()).filter(Boolean),
       coverFile,
@@ -775,6 +819,17 @@ document.getElementById("upload-form").addEventListener("submit", async (e) => {
     };
 
     const result = await API.uploadBeat(beatData);
+
+    if (result.ok && result.beatId && API.isReady()) {
+      // Create license rows for this beat
+      const licenses = [
+        { beat_id: result.beatId, type: "mp3",       label: "Basic MP3",       price: mp3Price, features: ["MP3 Lease", "50K streams", "10K downloads", "Non-exclusive"] },
+        { beat_id: result.beatId, type: "wav",       label: "Premium WAV",     price: wavPrice, features: ["WAV + MP3 Files", "500K streams", "100K downloads", "Non-exclusive"] },
+        { beat_id: result.beatId, type: "unlimited", label: "Unlimited Use",   price: unlPrice, features: ["WAV + MP3 Files", "Unlimited streams", "Unlimited sales", "Non-exclusive"] },
+        { beat_id: result.beatId, type: "exclusive", label: "Exclusive Rights", price: excPrice, features: ["Exclusive Rights", "WAV + Stems", "Unlimited everything", "Beat removed from store"] },
+      ];
+      await supabase.from("licenses").insert(licenses);
+    }
 
     if (result.ok) {
       document.getElementById("upload-success").style.display = "block";

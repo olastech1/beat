@@ -228,15 +228,7 @@ const API = (() => {
 
     if (beatErr) return { ok: false, error: beatErr.message };
 
-    // Create default license tiers
-    await supabase.from("licenses").insert([
-      { beat_id: beat.id, type: "mp3",       label: "Basic MP3",       price: parseFloat(price),           features: ["MP3 Lease","50K streams","Non-exclusive"] },
-      { beat_id: beat.id, type: "wav",       label: "Premium WAV",     price: parseFloat(price) * 2,       features: ["WAV + MP3","500K streams","Non-exclusive"] },
-      { beat_id: beat.id, type: "unlimited", label: "Unlimited Use",   price: parseFloat(price) * 4,       features: ["WAV + MP3","Unlimited streams","Non-exclusive"] },
-      { beat_id: beat.id, type: "exclusive", label: "Exclusive Rights", price: parseFloat(price) * 12,     features: ["Exclusive","WAV + Stems","Beat removed from store"] },
-    ]);
-
-    return { ok: true, beat };
+    return { ok: true, beat, beatId: beat.id };
   }
 
   // ── Admin: get all beats (any status) ───────────────────────
