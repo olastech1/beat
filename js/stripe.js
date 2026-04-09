@@ -1,9 +1,70 @@
 // ─────────────────────────────────────────────────────────────────
 //  BeatMarket — Stripe Frontend Integration
-//  Handles redirect to Stripe Checkout and payment return URL
+//  Reads Stripe keys from admin settings (localStorage) and handles
+//  redirect to Stripe Checkout and payment return URL.
 // ─────────────────────────────────────────────────────────────────
 
 const StripeCheckout = (() => {
+
+  const STRIPE_STORAGE_KEY = "bm_stripe_keys";
+  let _cachedKeys = null;
+
+  // Read keys saved by the admin settings panel
+  function _getSavedKeys() {
+    if (_cachedKeys) return _cachedKeys;
+    try {
+      const raw = localStorage.getItem(STRIPE_STORAGE_KEY);
+      if (raw) {
+        _cachedKeys = JSON.parse(raw);
+        return _cachedKeys;
+      }
+    } catch {}
+    return {};
+  }
+
+  // Load keys from Supabase (for buyers on other devices)
+  async function _loadKeysFromSupabase() {
+    if (!window.supabase || !window._supabaseReady) return;
+    try {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "stripe_keys")
+        .single();
+      if (data?.value) {
+        const keys = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+        if (keys.pk) {
+          // Cache and sync to localStorage
+          _cachedKeys = keys;
+          localStorage.setItem(STRIPE_STORAGE_KEY, JSON.stringify(keys));
+          if (keys.pk) window._stripePublishableKey = keys.pk;
+        }
+      }
+    } catch {}
+  }
+
+  // Auto-load keys on module init
+  const localKeys = _getSavedKeys();
+  if (!localKeys.pk) {
+    // No local keys — try Supabase in background
+    _loadKeysFromSupabase();
+  }
+
+  function getPublishableKey() {
+    // Priority: 1) global override  2) cached/localStorage  3) placeholder
+    return window._stripePublishableKey
+      || _getSavedKeys().pk
+      || "pk_test_YOUR_PUBLISHABLE_KEY";
+  }
+
+  function getSecretKey() {
+    return _getSavedKeys().sk || "";
+  }
+
+  function isConfigured() {
+    const pk = getPublishableKey();
+    return pk && !pk.includes("YOUR_PUBLISHABLE_KEY");
+  }
 
   // ── Load Stripe.js lazily ─────────────────────────────────────
   let _stripe = null;
@@ -18,9 +79,7 @@ const StripeCheckout = (() => {
         document.head.appendChild(s);
       });
     }
-    // pk_test_ key — replace with your real publishable key
-    const pk = window._stripePublishableKey || "pk_test_YOUR_PUBLISHABLE_KEY";
-    _stripe = window.Stripe(pk);
+    _stripe = window.Stripe(getPublishableKey());
     return _stripe;
   }
 
@@ -42,6 +101,18 @@ const StripeCheckout = (() => {
     const { data: sbSession } = await supabase.auth.getSession();
     const token = sbSession?.session?.access_token;
 
+    const body = {
+      items: lineItems,
+      customer_email: session?.email || undefined,
+      success_url: `${window.location.origin}/buyer.html?payment=success`,
+      cancel_url:  `${window.location.origin}${window.location.pathname}?payment=cancelled`,
+    };
+
+    // Pass the secret key to the Edge Function if admin set it
+    // (fallback for when env var STRIPE_SECRET_KEY is not configured)
+    const sk = getSecretKey();
+    if (sk) body.stripe_secret_key = sk;
+
     const res = await fetch(
       `${supabase.supabaseUrl}/functions/v1/create-checkout`,
       {
@@ -51,12 +122,7 @@ const StripeCheckout = (() => {
           "Authorization": `Bearer ${token || supabase.supabaseKey}`,
           "apikey":        supabase.supabaseKey,
         },
-        body: JSON.stringify({
-          items: lineItems,
-          customer_email: session?.email || undefined,
-          success_url: `${window.location.origin}/buyer.html?payment=success`,
-          cancel_url:  `${window.location.origin}${window.location.pathname}?payment=cancelled`,
-        }),
+        body: JSON.stringify(body),
       }
     );
 
@@ -71,8 +137,8 @@ const StripeCheckout = (() => {
   async function checkout(cartItems) {
     const session = Auth.getSession();
 
-    if (!API.isReady()) {
-      // Demo mode: simulate checkout
+    // Check if Stripe keys are configured
+    if (!isConfigured() || !API.isReady()) {
       return { ok: false, demo: true, message: "Stripe not configured — running in demo mode." };
     }
 
@@ -110,5 +176,5 @@ const StripeCheckout = (() => {
     return null;
   }
 
-  return { checkout, handleReturnParams };
+  return { checkout, handleReturnParams, isConfigured, getPublishableKey };
 })();

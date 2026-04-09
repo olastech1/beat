@@ -1377,21 +1377,42 @@ drawBarChart("genre-chart", [
 const STRIPE_STORAGE_KEY = "bm_stripe_keys";
 
 function loadStripeKeys() {
+  // Load from localStorage immediately (fast)
   const saved = localStorage.getItem(STRIPE_STORAGE_KEY);
-  if (!saved) { updateStripeIndicator(); return; }
-  try {
-    const keys = JSON.parse(saved);
-    if (keys.pk)    document.getElementById("stripe-pk").value    = keys.pk;
-    if (keys.sk)    document.getElementById("stripe-sk").value    = keys.sk;
-    if (keys.whsec) document.getElementById("stripe-whsec").value = keys.whsec;
-    // Apply publishable key globally for Stripe.js
-    if (keys.pk) window._stripePublishableKey = keys.pk;
-  } catch { localStorage.removeItem(STRIPE_STORAGE_KEY); }
+  if (saved) {
+    try {
+      const keys = JSON.parse(saved);
+      if (keys.pk)    document.getElementById("stripe-pk").value    = keys.pk;
+      if (keys.sk)    document.getElementById("stripe-sk").value    = keys.sk;
+      if (keys.whsec) document.getElementById("stripe-whsec").value = keys.whsec;
+      if (keys.pk) window._stripePublishableKey = keys.pk;
+    } catch { localStorage.removeItem(STRIPE_STORAGE_KEY); }
+  }
   updateStripeIndicator();
   updateCliBlock();
+
+  // Also try loading from Supabase (overwrites if newer)
+  if (API.isReady()) {
+    supabase.from("site_settings").select("value").eq("key", "stripe_keys").single()
+      .then(({ data }) => {
+        if (data?.value) {
+          try {
+            const keys = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+            if (keys.pk)    document.getElementById("stripe-pk").value    = keys.pk;
+            if (keys.sk)    document.getElementById("stripe-sk").value    = keys.sk;
+            if (keys.whsec) document.getElementById("stripe-whsec").value = keys.whsec;
+            if (keys.pk) window._stripePublishableKey = keys.pk;
+            // Sync to localStorage
+            localStorage.setItem(STRIPE_STORAGE_KEY, JSON.stringify(keys));
+            updateStripeIndicator();
+            updateCliBlock();
+          } catch {}
+        }
+      }).catch(() => {});
+  }
 }
 
-function saveStripeKeys() {
+async function saveStripeKeys() {
   const pk    = document.getElementById("stripe-pk").value.trim();
   const sk    = document.getElementById("stripe-sk").value.trim();
   const whsec = document.getElementById("stripe-whsec").value.trim();
@@ -1403,8 +1424,23 @@ function saveStripeKeys() {
   if (pk && !isValidPk) { alert("Publishable key must start with pk_test_ or pk_live_"); return; }
   if (sk && !isValidSk) { alert("Secret key must start with sk_test_ or sk_live_"); return; }
 
-  localStorage.setItem(STRIPE_STORAGE_KEY, JSON.stringify({ pk, sk, whsec }));
+  const keys = { pk, sk, whsec };
+
+  // Save to localStorage (immediate)
+  localStorage.setItem(STRIPE_STORAGE_KEY, JSON.stringify(keys));
   if (pk) window._stripePublishableKey = pk;
+
+  // Save to Supabase (persistent across devices)
+  if (API.isReady()) {
+    try {
+      await supabase.from("site_settings").upsert(
+        { key: "stripe_keys", value: keys, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+    } catch (e) {
+      console.warn("Could not save Stripe keys to Supabase:", e);
+    }
+  }
 
   updateStripeIndicator();
   updateCliBlock();
@@ -1415,13 +1451,19 @@ function saveStripeKeys() {
   setTimeout(() => { btn.textContent = orig; }, 2000);
 }
 
-function clearStripeKeys() {
+async function clearStripeKeys() {
   if (!confirm("Clear all saved Stripe keys?")) return;
   localStorage.removeItem(STRIPE_STORAGE_KEY);
   document.getElementById("stripe-pk").value    = "";
   document.getElementById("stripe-sk").value    = "";
   document.getElementById("stripe-whsec").value = "";
   window._stripePublishableKey = undefined;
+
+  // Also clear from Supabase
+  if (API.isReady()) {
+    try { await supabase.from("site_settings").delete().eq("key", "stripe_keys"); } catch {}
+  }
+
   updateStripeIndicator();
   updateCliBlock();
 }
