@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signing in… — BeatMarket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #08070f;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse 60% 40% at 50% 30%, rgba(124,58,237,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1.3rem; font-weight: 800; color: #fff;
+      position: relative; z-index: 1;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #7C3AED, #6366F1);
+      border-radius: 10px; display: grid; place-items: center; font-size: 1.2rem;
+    }
+    .logo span { color: #a78bfa; }
+
+    .card {
+      position: relative; z-index: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      text-align: center;
+      min-width: 300px;
+    }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(124,58,237,0.2);
+      border-top-color: #7C3AED;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1.2rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 0.4rem; }
+    p  { font-size: 0.82rem; color: rgba(255,255,255,0.4); }
+
+    .status-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .error-msg {
+      font-size: 0.82rem; color: #fca5a5;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 8px; padding: 0.6rem 1rem;
+      margin-top: 1rem;
+    }
+    .btn-back {
+      display: inline-block; margin-top: 1.2rem;
+      padding: 0.6rem 1.4rem;
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 8px;
+      color: #a78bfa; font-size: 0.82rem; font-weight: 500;
+      text-decoration: none; transition: all 0.2s;
+    }
+    .btn-back:hover { background: rgba(124,58,237,0.35); }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <div class="logo-icon">🎧</div>
+    Beat<span>Market</span>
+  </div>
+
+  <div class="card" id="card">
+    <div class="spinner"></div>
+    <h2>Completing sign-in…</h2>
+    <p>Please wait while we verify your account.</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+  const SESSION_KEY = "bm_session";
+
+  function showError(msg) {
+    document.getElementById("card").innerHTML = `
+      <div class="status-icon">⚠️</div>
+      <h2>Sign-in failed</h2>
+      <div class="error-msg">${msg}</div>
+      <a href="login.html" class="btn-back">← Back to Login</a>
+    `;
+  }
+
+  function showSuccess(name, subtitle) {
+    document.getElementById("card").innerHTML = `
+      <div class="status-icon">✅</div>
+      <h2>Welcome, ${name}!</h2>
+      <p>${subtitle || 'Redirecting you now…'}</p>
+    `;
+  }
+
+  function getDashboardUrl(role) {
+    if (role === "admin")  return "admin.html";
+    if (role === "seller") return "seller.html";
+    return "buyer.html";
+  }
+
+  async function handleAuthCallback() {
+    try {
+      // Parse the hash fragment to detect the auth event type
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const authType = hashParams.get("type"); // "signup", "recovery", "magiclink", etc.
+
+      // Let Supabase process the tokens from the URL
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      // If no session yet, listen for auth state change (Supabase may need a moment)
+      if (!session && !error) {
+        return new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            showError("Could not establish session. The link may have expired.");
+            resolve();
+          }, 8000);
+
+          supabase.auth.onAuthStateChange((event, newSession) => {
+            if (newSession) {
+              clearTimeout(timeout);
+              processSession(newSession, authType);
+              resolve();
+            }
+          });
+        });
+      }
+
+      if (error || !session) {
+        showError(error?.message || "Could not establish session. Please try again.");
+        return;
+      }
+
+      await processSession(session, authType);
+    } catch (err) {
+      showError("Unexpected error: " + err.message);
+    }
+  }
+
+  async function processSession(session, authType) {
+    const user = session.user;
+    const m    = user.user_metadata || {};
+
+    // Try to get profile from DB (with timeout)
+    let profile = null;
+    try {
+      const result = await Promise.race([
+        supabase.from("profiles")
+          .select("id, role, name, status, avatar_url, handle")
+          .eq("id", user.id)
+          .single(),
+        new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 5000))
+      ]);
+      profile = result.data || null;
+    } catch (_) {}
+
+    // If no profile row exists yet, create one
+    if (!profile) {
+      const newProfile = {
+        id:     user.id,
+        name:   m.full_name || m.name || user.email.split("@")[0],
+        role:   m.role || "buyer",
+        status: "active",
+      };
+      await supabase.from("profiles").upsert(newProfile, { onConflict: "id" });
+      profile = newProfile;
+    }
+
+    if (profile.status === "banned") {
+      await supabase.auth.signOut();
+      showError("This account has been suspended.");
+      return;
+    }
+
+    // Save session to localStorage
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      id:     user.id,
+      email:  user.email,
+      role:   profile.role,
+      name:   profile.name,
+      avatar: profile.avatar_url || m.avatar_url || null,
+      handle: profile.handle || null,
+    }));
+
+    // Choose message based on auth type
+    const dashboard = getDashboardUrl(profile.role);
+    if (authType === "signup") {
+      showSuccess(profile.name, "Email verified! Taking you to your dashboard…");
+    } else if (authType === "recovery") {
+      showSuccess(profile.name, "Password reset successful! Redirecting…");
+    } else {
+      showSuccess(profile.name, "Redirecting you now…");
+    }
+
+    // Redirect to the correct dashboard
+    setTimeout(() => {
+      window.location.href = dashboard;
+    }, 1400);
+  }
+
+  // Start
+  handleAuthCallback();
+  </script>
+</body>
+</html>

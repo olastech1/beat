@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Library — BeatMarket</title>
+  <meta name="description" content="Your purchased beats, downloads, and order history on BeatMarket.">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+    /* ── Sidebar layout ──────────────────────────────────────── */
+    .buyer-layout { display: flex; min-height: 100vh; }
+
+    .buyer-sidebar {
+      width: 240px; flex-shrink: 0;
+      background: rgba(255,255,255,0.02);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 1.5rem 0;
+      position: sticky; top: 0; height: 100vh;
+      overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 1rem;
+      text-decoration: none; color: #fff;
+      font-size: 1rem; font-weight: 800;
+    }
+    .sidebar-logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg,#7C3AED,#5B21B6);
+      border-radius: 8px; display: grid; place-items: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .sidebar-logo span { color: #9B59FF; }
+
+    .sidebar-nav-item {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 0.65rem 1.25rem; margin: 1px 0.5rem;
+      border-radius: 8px; font-size: 0.85rem; font-weight: 500;
+      color: rgba(255,255,255,0.5); text-decoration: none;
+      cursor: pointer; transition: all 0.18s; border: none;
+      background: none; width: calc(100% - 1rem); text-align: left;
+    }
+    .sidebar-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .sidebar-nav-item.active { background: rgba(124,58,237,0.15); color: #9B59FF; font-weight: 600; }
+    .sidebar-nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    .sidebar-section-label {
+      font-size: 0.65rem; font-weight: 600; color: rgba(255,255,255,0.25);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 0.6rem 1.25rem 0.3rem;
+    }
+
+    .sidebar-footer { margin-top: auto; padding: 1rem 0.5rem; border-top: 1px solid rgba(255,255,255,0.06); }
+
+    .buyer-avatar {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg,#10B981,#059669);
+      border-radius: 10px; display: grid; place-items: center;
+      font-size: 0.85rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+
+    /* ── Main content ────────────────────────────────────────── */
+    .buyer-main { flex: 1; padding: 2rem; overflow-x: hidden; }
+
+    .buyer-header {
+      margin-bottom: 2rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    }
+    .buyer-header h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.4px; }
+    .buyer-header p  { font-size: 0.85rem; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+    .section-hidden { display: none !important; }
+
+    /* ── Stat cards ──────────────────────────────────────────── */
+    .buyer-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .buyer-stat {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 1.25rem;
+      text-align: center;
+    }
+    .buyer-stat-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .buyer-stat-value { font-size: 1.6rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 2px; }
+    .buyer-stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+
+    /* ── Section card ────────────────────────────────────────── */
+    .section-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px; overflow: hidden; margin-bottom: 1.5rem;
+    }
+    .section-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .section-card-title { font-size: 0.95rem; font-weight: 700; }
+    .section-card-body  { padding: 1.25rem 1.5rem; }
+
+    /* ── Beat library cards ──────────────────────────────────── */
+    .library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .library-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 1rem; text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .library-item:hover { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.05); }
+    .library-cover {
+      width: 100%; aspect-ratio: 1; border-radius: 8px;
+      background: linear-gradient(135deg,#1e1033,#2a1250);
+      margin-bottom: 0.75rem; object-fit: cover;
+      display: block;
+    }
+    .library-cover-placeholder { display: grid; place-items: center; font-size: 2.5rem; }
+    .library-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .library-producer { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-bottom: 0.6rem; }
+    .library-license { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 20px; background: rgba(124,58,237,0.2); color: #9B59FF; display: inline-block; margin-bottom: 0.75rem; }
+    .library-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+      width: 100%; padding: 0.5rem; border-radius: 8px;
+      background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.3);
+      color: #9B59FF; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      transition: all 0.18s; text-decoration: none;
+    }
+    .library-btn:hover { background: rgba(124,58,237,0.35); }
+
+    /* ── Orders table ────────────────────────────────────────── */
+    .orders-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    .orders-table th { padding: 0.6rem 0.85rem; text-align: left; font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .orders-table td { padding: 0.8rem 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .orders-table tr:last-child td { border-bottom: none; }
+    .orders-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 0.22rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+    }
+    .badge-completed { background: rgba(16,185,129,0.15); color: #10B981; }
+    .badge-pending   { background: rgba(251,191,36,0.12); color: #F59E0B; }
+    .badge-failed    { background: rgba(239,68,68,0.12); color: #EF4444; }
+
+    /* ── Profile ─────────────────────────────────────────────── */
+    .profile-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .profile-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .profile-group label { font-size: 0.75rem; font-weight: 500; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.05em; }
+    .profile-group input {
+      padding: 0.65rem 0.9rem;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 10px; color: #fff; font-family: inherit; font-size: 0.85rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .profile-group input:focus { border-color: rgba(124,58,237,0.5); }
+    .profile-group-full { grid-column: 1/-1; }
+    .save-btn {
+      margin-top: 0.5rem; padding: 0.7rem 1.8rem;
+      background: linear-gradient(135deg, #7C3AED, #5B21B6);
+      border: none; border-radius: 10px; color: #fff; font-family: inherit;
+      font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+    }
+    .save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(124,58,237,0.45); }
+
+    /* ── Mobile sticky header + drawer ────────────────────────── */
+    .mobile-bottom-nav { display:none; }
+
+    .mobile-header {
+      display: none;
+      align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem;
+      position: sticky; top: 0;
+      background: rgba(10,10,15,0.97);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      z-index: 200;
+    }
+
+    .mobile-hamburger {
+      display: flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 36px; height: 36px; padding: 6px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9px; cursor: pointer; transition: background 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-hamburger:hover, .mobile-hamburger.open { background: rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.4); }
+    .mobile-hamburger span {
+      display: block; height: 2px; background: rgba(255,255,255,0.8);
+      border-radius: 2px; transition: all 0.25s;
+    }
+    .mobile-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .mobile-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .mobile-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Drawer overlay */
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(2px);
+      z-index: 299;
+      transition: opacity 0.25s;
+    }
+    .drawer-overlay.open { display: block; }
+
+    /* Drawer itself — solid background, slides from left */
+    .mobile-drawer {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 78%; max-width: 300px;
+      background: #13131e;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 4px 0 40px rgba(0,0,0,0.6);
+      z-index: 300;
+      display: flex; flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto;
+    }
+    .mobile-drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .drawer-user {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .drawer-nav { padding: 0.75rem 0.75rem; flex: 1; }
+    .drawer-nav-label {
+      font-size: 0.62rem; font-weight: 700; color: rgba(255,255,255,0.25);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 0.6rem 0.5rem 0.3rem;
+    }
+    .drawer-item {
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.75rem 0.9rem; border-radius: 10px; margin: 2px 0;
+      color: rgba(255,255,255,0.65); font-size: 0.9rem; font-weight: 500;
+      background: none; border: none; width: 100%; text-align: left;
+      cursor: pointer; transition: all 0.15s; text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .drawer-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .drawer-item.active { background: rgba(124,58,237,0.16); color: #a855f7; font-weight: 600; }
+    .drawer-item .di-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+    .drawer-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* Avatar (reuse .buyer-avatar from above) */
+    .mobile-avatar-btn { position: relative; cursor: pointer; }
+
+    @media (max-width: 768px) {
+      .buyer-sidebar   { display: none !important; }
+      .sidebar-overlay { display: none !important; }
+      .mobile-header   { display: flex; }
+      .buyer-main { padding: 1.25rem 1rem; }
+      .buyer-stats { grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+      .library-grid { grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); }
+      .profile-form { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .buyer-stats { grid-template-columns: 1fr 1fr; }
+      .buyer-stat-value { font-size: 1.2rem; }
+      .orders-table th:nth-child(3), .orders-table td:nth-child(3),
+      .orders-table th:nth-child(5), .orders-table td:nth-child(5) { display: none; }
+    }
+    ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:10px; }
+    .empty-state { text-align:center; padding:3rem 1rem; color:rgba(255,255,255,0.3); }
+    .empty-state .icon { font-size:3rem; margin-bottom:0.75rem; }
+    .empty-state p { font-size:0.9rem; }
+    .empty-state a { color:#9B59FF; text-decoration:none; }
+    .empty-state a:hover { text-decoration:underline; }
+
+    /* ── Profile hero card ───────────────────────────────── */
+    .profile-hero {
+      background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(91,33,182,0.08));
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+      position: relative; overflow: hidden;
+    }
+    .profile-hero::before {
+      content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .profile-avatar-lg {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, #7C3AED, #a855f7);
+      border-radius: 50%; display: grid; place-items: center;
+      font-size: 1.8rem; font-weight: 900; color: #fff; flex-shrink: 0;
+      box-shadow: 0 8px 30px rgba(124,58,237,0.35);
+      border: 3px solid rgba(255,255,255,0.1);
+    }
+    .profile-info { flex: 1; min-width: 180px; }
+    .profile-name { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 2px; }
+    .profile-email { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 0.5rem; }
+    .profile-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .profile-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 0.22rem 0.65rem; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700;
+    }
+    .badge-role { background: rgba(16,185,129,0.15); color: #10B981; }
+    .badge-member { background: rgba(124,58,237,0.15); color: #9B59FF; }
+
+    /* ── Profile stats grid ──────────────────────────────── */
+    .profile-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .profile-stat {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 1rem; text-align: center;
+      transition: border-color 0.2s, transform 0.2s; cursor: default;
+    }
+    .profile-stat:hover { border-color: rgba(124,58,237,0.3); transform: translateY(-2px); }
+    .profile-stat-val { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 2px;
+      background: linear-gradient(135deg, #a855f7, #7C3AED); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .profile-stat-lbl { font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 500; }
+
+    /* ── Liked beats grid ────────────────────────────────── */
+    .liked-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
+    .liked-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem;
+      transition: border-color 0.2s, background 0.2s; cursor: default;
+    }
+    .liked-card:hover { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.03); }
+    .liked-cover { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+      background: linear-gradient(135deg, #1e1033, #2a1250); }
+    .liked-info { flex: 1; min-width: 0; }
+    .liked-title { font-size: 0.82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .liked-producer { font-size: 0.72rem; color: rgba(255,255,255,0.4); }
+    .unlike-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: rgba(239,68,68,0.12); color: #EF4444; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.18s; flex-shrink: 0; display: grid; place-items: center;
+    }
+    .unlike-btn:hover { background: rgba(239,68,68,0.25); transform: scale(1.1); }
+
+    /* ── Following list ──────────────────────────────────── */
+    .following-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
+    .following-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .following-card:hover { border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.03); }
+    .following-avatar {
+      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #7C3AED, #ec4899);
+      display: grid; place-items: center; font-weight: 800; font-size: 0.85rem; color: #fff;
+    }
+    .following-info { flex: 1; min-width: 0; }
+    .following-name { font-size: 0.85rem; font-weight: 700; }
+    .following-genre { font-size: 0.7rem; color: rgba(255,255,255,0.4); }
+    .unfollow-btn {
+      padding: 0.3rem 0.7rem; border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15); background: none;
+      color: rgba(255,255,255,0.5); font-size: 0.72rem; font-weight: 600;
+      cursor: pointer; transition: all 0.18s; white-space: nowrap;
+    }
+    .unfollow-btn:hover { border-color: rgba(239,68,68,0.4); color: #EF4444; background: rgba(239,68,68,0.08); }
+
+    /* ── Section tabs inside profile ─────────────────────── */
+    .profile-tabs {
+      display: flex; gap: 0.25rem; margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0;
+    }
+    .profile-tab {
+      padding: 0.6rem 1rem; border: none; background: none;
+      color: rgba(255,255,255,0.4); font-family: inherit; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.18s; border-bottom: 2px solid transparent;
+      position: relative; bottom: -1px;
+    }
+    .profile-tab:hover { color: rgba(255,255,255,0.7); }
+    .profile-tab.active { color: #9B59FF; border-bottom-color: #9B59FF; }
+    .profile-tab-content { display: none; }
+    .profile-tab-content.active { display: block; }
+
+    @media (max-width: 768px) {
+      .profile-hero { padding: 1.25rem; gap: 1rem; }
+      .profile-avatar-lg { width: 60px; height: 60px; font-size: 1.4rem; }
+      .profile-stats { grid-template-columns: 1fr 1fr; }
+      .liked-grid { grid-template-columns: 1fr; }
+      .following-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Mobile sticky header -->
+<div class="mobile-header" id="mobile-header">
+  <!-- Hamburger -->
+  <button class="mobile-hamburger" id="mobile-hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <!-- Logo -->
+  <a href="index.html" style="display:flex;align-items:center;gap:0.5rem;font-weight:800;font-size:0.95rem;text-decoration:none;color:#fff">
+    <div style="width:28px;height:28px;background:linear-gradient(135deg,#7C3AED,#5B21B6);border-radius:7px;display:grid;place-items:center;font-size:0.8rem">🎧</div>
+    Beat<span style="color:#9B59FF">Market</span>
+  </a>
+  <!-- Avatar -->
+  <div id="mobile-avatar" class="buyer-avatar" style="width:34px;height:34px;font-size:0.78rem">U</div>
+</div>
+
+<!-- Drawer overlay -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+
+<!-- Slide-in drawer -->
+<aside class="mobile-drawer" id="mobile-drawer">
+
+  <!-- Drawer header: logo + close -->
+  <div class="drawer-header">
+    <div style="display:flex;align-items:center;gap:0.6rem;font-weight:800;font-size:0.95rem">
+      <div style="width:28px;height:28px;background:linear-gradient(135deg,#7C3AED,#5B21B6);border-radius:7px;display:grid;place-items:center;font-size:0.8rem">🎧</div>
+      Beat<span style="color:#9B59FF">Market</span>
+    </div>
+    <button id="drawer-close" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:rgba(255,255,255,0.6);width:32px;height:32px;font-size:1rem;cursor:pointer;display:grid;place-items:center">×</button>
+  </div>
+
+  <!-- User info -->
+  <div class="drawer-user">
+    <div class="buyer-avatar" id="drawer-avatar" style="width:40px;height:40px;font-size:0.9rem">U</div>
+    <div>
+      <div id="drawer-name" style="font-weight:700;font-size:0.9rem">Loading…</div>
+      <div id="drawer-email" style="font-size:0.72rem;color:rgba(255,255,255,0.35)"></div>
+    </div>
+  </div>
+
+  <!-- Nav items -->
+  <div class="drawer-nav">
+    <div class="drawer-nav-label">Library</div>
+    <button class="drawer-item active" data-section="library" onclick="go('library')">
+      <span class="di-icon">🎵</span> My Beats
+    </button>
+    <button class="drawer-item" data-section="orders" onclick="go('orders')">
+      <span class="di-icon">🛒</span> Order History
+    </button>
+    <button class="drawer-item" data-section="licenses" onclick="go('licenses')">
+      <span class="di-icon">📄</span> My Licenses
+    </button>
+    <button class="drawer-item" data-section="liked" onclick="go('liked')">
+      <span class="di-icon">❤️</span> Liked Beats
+    </button>
+
+    <div class="drawer-nav-label" style="margin-top:0.5rem">Account</div>
+    <button class="drawer-item" data-section="profile" onclick="go('profile')">
+      <span class="di-icon">👤</span> Profile
+    </button>
+    <a class="drawer-item" href="index.html">
+      <span class="di-icon">🏠</span> Browse Beats
+    </a>
+  </div>
+
+  <!-- Footer: logout -->
+  <div class="drawer-footer">
+    <button onclick="doLogout()" style="display:flex;align-items:center;gap:0.6rem;width:100%;padding:0.65rem 0.9rem;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:#EF4444;font-size:0.88rem;font-weight:600;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(239,68,68,0.15)'" onmouseout="this.style.background='rgba(239,68,68,0.08)'">
+      🚪 Log Out
+    </button>
+  </div>
+</aside>
+
+<!-- (bottom nav unused) -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-hidden="true"></nav>
+
+
+<div class="buyer-layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="buyer-sidebar" id="buyer-sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <div class="sidebar-logo-icon">🎧</div>
+      Beat<span>Market</span>
+    </a>
+
+    <div class="sidebar-section-label">Library</div>
+    <button class="sidebar-nav-item active" data-section="library" onclick="go('library')">
+      <span class="nav-icon">🎵</span> My Beats
+    </button>
+    <button class="sidebar-nav-item" data-section="orders" onclick="go('orders')">
+      <span class="nav-icon">🛒</span> Order History
+    </button>
+    <button class="sidebar-nav-item" data-section="licenses" onclick="go('licenses')">
+      <span class="nav-icon">📄</span> My Licenses
+    </button>
+    <button class="sidebar-nav-item" data-section="liked" onclick="go('liked')">
+      <span class="nav-icon">❤️</span> Liked Beats
+    </button>
+
+    <div class="sidebar-section-label" style="margin-top:1rem">Account</div>
+    <button class="sidebar-nav-item" data-section="profile" onclick="go('profile')">
+      <span class="nav-icon">👤</span> Profile
+    </button>
+    <a class="sidebar-nav-item" href="index.html">
+      <span class="nav-icon">🏠</span> Browse Beats
+    </a>
+
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem">
+        <div class="buyer-avatar" id="sidebar-avatar">U</div>
+        <div style="min-width:0">
+          <div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-name">Loading…</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.35)" id="sidebar-role">Buyer</div>
+        </div>
+      </div>
+      <button onclick="doLogout()" style="display:flex;align-items:center;gap:0.55rem;width:100%;padding:0.55rem 0.75rem;border-radius:8px;background:none;border:none;color:#EF4444;font-size:0.82rem;font-weight:600;cursor:pointer;margin-top:0.35rem;transition:background 0.18s" onmouseenter="this.style.background='rgba(239,68,68,0.1)'" onmouseleave="this.style.background='none'">
+        🚪 Log Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="buyer-main">
+
+    <!-- ═══ LIBRARY ═══ -->
+    <div id="section-library">
+      <div class="buyer-header">
+        <div>
+          <h1>🎵 My Beats</h1>
+          <p id="library-subtitle">Your purchased beats are ready to download.</p>
+        </div>
+        <a href="index.html" style="padding:0.6rem 1.25rem;background:linear-gradient(135deg,#7C3AED,#5B21B6);border-radius:10px;color:#fff;font-size:0.85rem;font-weight:700;text-decoration:none">+ Browse More</a>
+      </div>
+
+      <div class="buyer-stats">
+        <div class="buyer-stat"><div class="buyer-stat-icon">🎵</div><div class="buyer-stat-value" id="stat-beats">0</div><div class="buyer-stat-label">Beats Owned</div></div>
+        <div class="buyer-stat"><div class="buyer-stat-icon">💸</div><div class="buyer-stat-value" id="stat-spent">$0</div><div class="buyer-stat-label">Total Spent</div></div>
+        <div class="buyer-stat"><div class="buyer-stat-icon">🛒</div><div class="buyer-stat-value" id="stat-orders">0</div><div class="buyer-stat-label">Orders</div></div>
+        <div class="buyer-stat"><div class="buyer-stat-icon">📄</div><div class="buyer-stat-value" id="stat-licenses">0</div><div class="buyer-stat-label">Licenses</div></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title">Your Beat Library</span>
+          <input type="search" placeholder="Search my beats…" id="library-search" style="padding:0.4rem 0.7rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-family:inherit;font-size:0.8rem;outline:none;width:180px">
+        </div>
+        <div class="section-card-body">
+          <div class="library-grid" id="library-grid">
+            <div class="empty-state" style="grid-column:1/-1">
+              <div class="icon">🎧</div>
+              <p>No beats purchased yet.<br><a href="index.html">Browse our catalog →</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ORDERS ═══ -->
+    <div id="section-orders" class="section-hidden">
+      <div class="buyer-header"><div><h1>🛒 Order History</h1><p>All your past purchases.</p></div></div>
+      <div class="section-card">
+        <div class="section-card-header"><span class="section-card-title">All Orders</span></div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table class="orders-table">
+            <thead><tr>
+              <th>#</th><th>Beat</th><th>Producer</th><th>License</th><th>Price</th><th>Date</th><th>Status</th><th>Download</th>
+            </tr></thead>
+            <tbody id="orders-body">
+              <tr><td colspan="8" class="empty-state" style="display:table-cell">Loading orders…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ LICENSES ═══ -->
+    <div id="section-licenses" class="section-hidden">
+      <div class="buyer-header"><div><h1>📄 My Licenses</h1><p>Legal documentation for your beats.</p></div></div>
+      <div class="section-card">
+        <div class="section-card-header"><span class="section-card-title">License Certificates</span></div>
+        <div class="section-card-body">
+          <div id="licenses-list">
+            <div class="empty-state"><div class="icon">📄</div><p>Your license documents will appear here after purchase.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ LIKED BEATS ═══ -->
+    <div id="section-liked" class="section-hidden">
+      <div class="buyer-header">
+        <div>
+          <h1>❤️ Liked Beats</h1>
+          <p id="liked-subtitle">Beats you've shown love to.</p>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title">Your Liked Beats</span>
+          <span id="liked-count-badge" style="font-size:0.75rem;padding:0.2rem 0.6rem;border-radius:20px;background:rgba(239,68,68,0.12);color:#EF4444;font-weight:700">0</span>
+        </div>
+        <div class="section-card-body">
+          <div class="liked-grid" id="liked-grid">
+            <div class="empty-state" style="grid-column:1/-1">
+              <div class="icon">❤️</div>
+              <p>No liked beats yet.<br><a href="discover.html">Discover beats to like →</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PROFILE ═══ -->
+    <div id="section-profile" class="section-hidden">
+      <div class="buyer-header"><div><h1>👤 My Profile</h1><p>Manage your account details.</p></div></div>
+
+      <!-- Profile hero card -->
+      <div class="profile-hero">
+        <div class="profile-avatar-lg" id="profile-avatar-lg">U</div>
+        <div class="profile-info">
+          <div class="profile-name" id="profile-name">Loading…</div>
+          <div class="profile-email" id="profile-email"></div>
+          <div class="profile-badges">
+            <span class="profile-badge badge-role" id="profile-role-badge">🎧 Buyer</span>
+            <span class="profile-badge badge-member" id="profile-member-badge">📅 Member since —</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile stats -->
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="profile-stat-val" id="ps-liked">0</div>
+          <div class="profile-stat-lbl">Liked Beats</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" id="ps-following">0</div>
+          <div class="profile-stat-lbl">Following</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" id="ps-owned">0</div>
+          <div class="profile-stat-lbl">Beats Owned</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" id="ps-spent">$0</div>
+          <div class="profile-stat-lbl">Total Spent</div>
+        </div>
+      </div>
+
+      <!-- Tabbed content -->
+      <div class="profile-tabs">
+        <button class="profile-tab active" data-tab="settings" onclick="switchProfileTab('settings')">⚙️ Settings</button>
+        <button class="profile-tab" data-tab="following" onclick="switchProfileTab('following')">👥 Following</button>
+      </div>
+
+      <!-- Tab: Settings -->
+      <div class="profile-tab-content active" id="ptab-settings">
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">Account Information</span></div>
+          <div class="section-card-body">
+            <div class="profile-form">
+              <div class="profile-group"><label>Full Name</label><input type="text" id="pf-name" placeholder="Your name"></div>
+              <div class="profile-group"><label>Email</label><input type="email" id="pf-email" placeholder="your@email.com" disabled style="opacity:0.5"></div>
+              <div class="profile-group profile-group-full">
+                <div id="profile-msg" style="display:none;padding:0.6rem 0.9rem;border-radius:8px;font-size:0.83rem;margin-bottom:0.5rem"></div>
+                <button class="save-btn" onclick="saveProfile()">💾 Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section-card" style="margin-top:1rem">
+          <div class="section-card-header"><span class="section-card-title">🔐 Change Password</span></div>
+          <div class="section-card-body">
+            <div class="profile-form">
+              <div class="profile-group"><label>New Password</label><input type="password" id="pf-pw" placeholder="Min 6 characters"></div>
+              <div class="profile-group"><label>Confirm Password</label><input type="password" id="pf-pw2" placeholder="Repeat above"></div>
+              <div class="profile-group profile-group-full">
+                <div id="pw-msg" style="display:none;padding:0.6rem 0.9rem;border-radius:8px;font-size:0.83rem;margin-bottom:0.5rem"></div>
+                <button class="save-btn" onclick="changePassword()">🔑 Update Password</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Following -->
+      <div class="profile-tab-content" id="ptab-following">
+        <div class="section-card">
+          <div class="section-card-header">
+            <span class="section-card-title">Producers You Follow</span>
+            <span id="following-count-badge" style="font-size:0.75rem;padding:0.2rem 0.6rem;border-radius:20px;background:rgba(124,58,237,0.15);color:#9B59FF;font-weight:700">0</span>
+          </div>
+          <div class="section-card-body">
+            <div class="following-grid" id="following-grid">
+              <div class="empty-state" style="grid-column:1/-1">
+                <div class="icon">👥</div>
+                <p>You're not following any producers yet.<br><a href="discover.html">Discover producers →</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /buyer-layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+// ── Auth guard ────────────────────────────────────────────────────
+const session = Auth.requireRole("buyer", "seller", "admin");
+if (!session) throw new Error("not authenticated");
+
+// ── Populate UI ───────────────────────────────────────────────
+document.getElementById("sidebar-name").textContent   = session.name || "User";
+document.getElementById("sidebar-role").textContent   = session.email || session.role;
+document.getElementById("sidebar-avatar").textContent = Auth.getInitials(session.name);
+document.getElementById("mobile-avatar").textContent  = Auth.getInitials(session.name);
+document.getElementById("drawer-avatar").textContent  = Auth.getInitials(session.name);
+document.getElementById("drawer-name").textContent    = session.name || "User";
+document.getElementById("drawer-email").textContent   = session.email || "";
+// Show first name in mobile header
+const firstName = (session.name || "").split(" ")[0];
+const mobileUserName = document.getElementById("mobile-user-name");
+if (mobileUserName) mobileUserName.textContent = firstName;
+document.getElementById("pf-name").value  = session.name  || "";
+document.getElementById("pf-email").value = session.email || "";
+
+// ── Handle payment return ──────────────────────────────────────
+(function checkPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const payment = params.get("payment");
+  if (payment === "success") {
+    history.replaceState({}, "", window.location.pathname);
+    setTimeout(() => {
+      const toast = document.createElement("div");
+      toast.style.cssText = "position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#059669,#10B981);color:#fff;padding:0.85rem 2rem;border-radius:12px;font-size:0.9rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(16,185,129,0.4);animation:slideDown 0.3s ease;display:flex;align-items:center;gap:0.5rem";
+      toast.innerHTML = "🎉 Payment successful! Your beats are ready.";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+      go("orders");
+    }, 500);
+  } else if (payment === "cancelled") {
+    history.replaceState({}, "", window.location.pathname);
+    setTimeout(() => {
+      const toast = document.createElement("div");
+      toast.style.cssText = "position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);background:rgba(239,68,68,0.9);color:#fff;padding:0.85rem 2rem;border-radius:12px;font-size:0.9rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(239,68,68,0.3)";
+      toast.textContent = "Payment was cancelled.";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }, 500);
+  }
+})();
+
+// ── Section navigation ─────────────────────────────────────────
+const SECTIONS = ["library","orders","licenses","liked","profile"];
+function go(id) {
+  SECTIONS.forEach(s => {
+    const el = document.getElementById("section-" + s);
+    if (el) el.classList.toggle("section-hidden", s !== id);
+  });
+  // Desktop sidebar
+  document.querySelectorAll(".sidebar-nav-item").forEach(el =>
+    el.classList.toggle("active", el.dataset.section === id)
+  );
+  // Mobile drawer items
+  document.querySelectorAll(".drawer-item[data-section]").forEach(el =>
+    el.classList.toggle("active", el.dataset.section === id)
+  );
+  closeDrawer();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (id === "library")  loadLibrary();
+  if (id === "orders")   loadOrders();
+  if (id === "licenses") loadLicenses();
+  if (id === "liked")    loadLikedBeats();
+  if (id === "profile")  loadProfileData();
+}
+
+// ── Hamburger / Drawer ────────────────────────────────────────
+const _hamburger = document.getElementById("mobile-hamburger");
+const _drawer    = document.getElementById("mobile-drawer");
+const _overlay   = document.getElementById("drawer-overlay");
+const _closeBtn  = document.getElementById("drawer-close");
+
+function openDrawer() {
+  _drawer.classList.add("open");
+  _overlay.classList.add("open");
+  _hamburger.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeDrawer() {
+  _drawer.classList.remove("open");
+  _overlay.classList.remove("open");
+  _hamburger.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+_hamburger.addEventListener("click", () =>
+  _drawer.classList.contains("open") ? closeDrawer() : openDrawer()
+);
+_overlay.addEventListener("click", closeDrawer);
+_closeBtn.addEventListener("click", closeDrawer);
+
+// Swipe left to close drawer
+let _touchStartX = 0;
+_drawer.addEventListener("touchstart", e => { _touchStartX = e.touches[0].clientX; }, { passive: true });
+_drawer.addEventListener("touchend", e => {
+  if (e.changedTouches[0].clientX - _touchStartX < -60) closeDrawer();
+}, { passive: true });
+
+// ── Logout ─────────────────────────────────────────────────────
+async function doLogout() {
+  await Auth.logout();
+  window.location.href = "index.html";
+}
+
+// ── Load library (purchased beats) ────────────────────────────
+let _orders = [];
+async function loadLibrary() {
+  const grid = document.getElementById("library-grid");
+  grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon" style="font-size:1.8rem">⏳</div><p>Loading your beats…</p></div>`;
+
+  if (API.isReady()) {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*, beats(id, title, cover_url, producer_name, genre), licenses(type, label)")
+      .eq("buyer_id", session.id)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false });
+    _orders = error ? [] : (data || []);
+  } else {
+    _orders = [];
+  }
+
+  const total = _orders.reduce((s, o) => s + parseFloat(o.amount || 0), 0);
+  document.getElementById("stat-beats").textContent    = _orders.length;
+  document.getElementById("stat-spent").textContent    = "$" + total.toFixed(2);
+  document.getElementById("stat-orders").textContent   = _orders.length;
+  document.getElementById("stat-licenses").textContent = _orders.length;
+  document.getElementById("library-subtitle").textContent = _orders.length
+    ? `${_orders.length} beat${_orders.length !== 1 ? "s" : ""} ready to download.`
+    : "Your purchased beats are ready to download.";
+
+  renderLibrary();
+}
+
+function renderLibrary(filter) {
+  const grid = document.getElementById("library-grid");
+  const items = filter
+    ? _orders.filter(o => (o.beats?.title || "").toLowerCase().includes(filter))
+    : _orders;
+
+  if (!items.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎧</div><p>No beats purchased yet.<br><a href="index.html">Browse our catalog →</a></p></div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(o => {
+    const b       = o.beats || {};
+    const cover   = b.cover_url || "";
+    const title   = Sanitize.text(b.title   || "Untitled Beat");
+    const prod    = Sanitize.text(b.producer_name || "Producer");
+    const license = Sanitize.text(o.licenses?.label || o.license_type || "License");
+    const imgTag  = cover
+      ? `<img src="${cover}" class="library-cover" alt="${title}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">`
+      : "";
+    const phTag = `<div class="library-cover library-cover-placeholder" style="${cover ? "display:none" : ""}">🎵</div>`;
+
+    return `<div class="library-item">
+      ${imgTag}${phTag}
+      <div class="library-title" title="${title}">${title}</div>
+      <div class="library-producer">${prod}</div>
+      <div class="library-license">${license}</div>
+      <a class="library-btn" href="${b.audio_url || "#"}" download="${title}.mp3" ${!b.audio_url ? 'onclick=\'alert("Download link not available yet");return false\'' : ""}>
+        ⬇️ Download
+      </a>
+    </div>`;
+  }).join("");
+}
+
+document.getElementById("library-search").addEventListener("input", e =>
+  renderLibrary(e.target.value.toLowerCase().trim())
+);
+
+// ── Load orders table ──────────────────────────────────────────
+async function loadOrders() {
+  const tbody = document.getElementById("orders-body");
+  tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="display:table-cell">Loading…</td></tr>`;
+
+  let orders = [];
+  if (API.isReady()) {
+    const { data } = await supabase
+      .from("orders")
+      .select("*, beats(title, producer_name)")
+      .eq("buyer_id", session.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    orders = data || [];
+  }
+
+  if (!orders.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🛒</div><p>No orders yet. <a href="index.html">Shop now →</a></p></div></td></tr>`;
+    return;
+  }
+
+  const statusBadge = s => {
+    const map = { completed:"badge-completed ✓ Complete", pending:"badge-pending ⏳ Pending", failed:"badge-failed ✗ Failed" };
+    const [cls, label] = (map[s] || "badge-pending " + s).split(" ").reduce((a, v, i) => i === 0 ? [[v], a[1]] : [a[0], (a[1]||"") + " " + v], [[], ""]);
+    return `<span class="status-badge ${cls[0]}">${label.trim()}</span>`;
+  };
+
+  tbody.innerHTML = orders.map((o, i) => `<tr>
+    <td style="color:rgba(255,255,255,0.3);font-size:0.75rem">#${(o.id||"").slice(-6) || (i+1)}</td>
+    <td style="font-weight:700">${Sanitize.text(o.beats?.title || "—")}</td>
+    <td style="color:rgba(255,255,255,0.5)">${Sanitize.text(o.beats?.producer_name || "—")}</td>
+    <td><span style="font-size:0.75rem;padding:0.2rem 0.55rem;background:rgba(124,58,237,0.15);color:#9B59FF;border-radius:12px">${o.license_type || "—"}</span></td>
+    <td style="font-weight:700;color:#10B981">$${parseFloat(o.amount||0).toFixed(2)}</td>
+    <td style="color:rgba(255,255,255,0.4);font-size:0.8rem">${(o.created_at||"").slice(0,10)}</td>
+    <td>${statusBadge(o.status || "completed")}</td>
+    <td>${o.status === "completed" && o.beats?.audio_url ? `<a href="${o.beats.audio_url}" download style="font-size:0.78rem;color:#9B59FF;text-decoration:none">⬇️ Download</a>` : "—"}</td>
+  </tr>`).join("");
+}
+
+// ── Load licenses ──────────────────────────────────────────────
+async function loadLicenses() {
+  const el = document.getElementById("licenses-list");
+  el.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Loading licenses…</p></div>`;
+
+  let orders = [];
+  if (API.isReady()) {
+    const { data } = await supabase
+      .from("orders")
+      .select("*, beats(title, producer_name), licenses(type, label, description, features)")
+      .eq("buyer_id", session.id)
+      .eq("status", "completed");
+    orders = data || [];
+  }
+
+  if (!orders.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>No licenses yet. <a href="index.html">Purchase a beat →</a></p></div>`;
+    return;
+  }
+
+  el.innerHTML = orders.map(o => {
+    const b = o.beats || {};
+    const l = o.licenses || {};
+    const date = (o.created_at || "").slice(0, 10);
+    const feats = (l.features || []).map(f => `<li style="margin-top:4px;font-size:0.78rem;color:rgba(255,255,255,0.5)">✓ ${Sanitize.text(f)}</li>`).join("");
+    return `<div style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:1.25rem;margin-bottom:0.85rem;display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;margin-bottom:2px">${Sanitize.text(b.title || "Untitled Beat")}</div>
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin-bottom:0.5rem">by ${Sanitize.text(b.producer_name || "Producer")} &nbsp;·&nbsp; Purchased ${date}</div>
+        <div style="display:inline-flex;align-items:center;gap:5px;padding:0.22rem 0.6rem;background:rgba(124,58,237,0.15);border-radius:12px;color:#9B59FF;font-size:0.78rem;font-weight:600">${Sanitize.text(l.label || o.license_type || "License")}</div>
+        ${feats ? `<ul style="list-style:none;margin-top:0.5rem">${feats}</ul>` : ""}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-bottom:4px">License ID</div>
+        <div style="font-size:0.7rem;font-family:monospace;color:rgba(255,255,255,0.4)">${(o.id||"—").slice(-12).toUpperCase()}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── Load liked beats ───────────────────────────────────────────
+async function loadLikedBeats() {
+  const grid = document.getElementById("liked-grid");
+  grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon" style="font-size:1.8rem">⏳</div><p>Loading liked beats…</p></div>`;
+
+  const likedBeats = await API.getLikedBeats();
+  const badge = document.getElementById("liked-count-badge");
+  badge.textContent = likedBeats.length;
+  document.getElementById("liked-subtitle").textContent = likedBeats.length
+    ? `${likedBeats.length} beat${likedBeats.length !== 1 ? "s" : ""} you've liked.`
+    : "Beats you've shown love to.";
+
+  if (!likedBeats.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">❤️</div><p>No liked beats yet.<br><a href="discover.html">Discover beats to like →</a></p></div>`;
+    return;
+  }
+
+  grid.innerHTML = likedBeats.map(b => {
+    const cover = b.cover || b.cover_url || '';
+    const title = b.title || 'Untitled';
+    const prod  = b.producer || 'Producer';
+    return `<div class="liked-card" id="liked-${b.id}">
+      ${cover ? `<img src="${cover}" class="liked-cover" alt="${title}" onerror="this.style.display='none'">` : `<div class="liked-cover" style="display:grid;place-items:center;font-size:1.3rem">🎵</div>`}
+      <div class="liked-info">
+        <div class="liked-title" title="${title}">${title}</div>
+        <div class="liked-producer">by ${prod}</div>
+      </div>
+      <button class="unlike-btn" onclick="unlikeBeat('${b.id}')" title="Remove like">❤️</button>
+    </div>`;
+  }).join("");
+}
+
+async function unlikeBeat(beatId) {
+  const card = document.getElementById("liked-" + beatId);
+  if (card) {
+    card.style.transform = "scale(0.95)";
+    card.style.opacity = "0.5";
+  }
+  await API.toggleLike(beatId);
+  setTimeout(() => loadLikedBeats(), 300);
+}
+
+// ── Load profile data (hero + stats + following) ──────────────
+async function loadProfileData() {
+  // Profile hero
+  document.getElementById("profile-avatar-lg").textContent = Auth.getInitials(session.name);
+  document.getElementById("profile-name").textContent = session.name || "User";
+  document.getElementById("profile-email").textContent = session.email || "";
+  document.getElementById("profile-role-badge").textContent = "🎧 " + (session.role === "seller" ? "Seller" : session.role === "admin" ? "Admin" : "Buyer");
+
+  // Profile stats
+  const stats = await API.getUserProfileStats();
+  document.getElementById("ps-liked").textContent = stats.likedCount;
+  document.getElementById("ps-following").textContent = stats.followingCount;
+  document.getElementById("ps-owned").textContent = stats.beatsOwned;
+  document.getElementById("ps-spent").textContent = "$" + stats.totalSpent;
+
+  // Load following list
+  loadFollowingList();
+}
+
+async function loadFollowingList() {
+  const grid = document.getElementById("following-grid");
+  grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon" style="font-size:1.5rem">⏳</div><p>Loading…</p></div>`;
+
+  const producers = await API.getFollowedProducers();
+  const badge = document.getElementById("following-count-badge");
+  badge.textContent = producers.length;
+
+  if (!producers.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">👥</div><p>You're not following anyone yet.<br><a href="discover.html">Discover producers →</a></p></div>`;
+    return;
+  }
+
+  grid.innerHTML = producers.map(p => {
+    const initials = Auth.getInitials(p.name);
+    return `<div class="following-card" id="following-${p.id}">
+      ${p.avatar_url
+        ? `<img src="${p.avatar_url}" class="following-avatar" alt="${p.name}" style="object-fit:cover">`
+        : `<div class="following-avatar">${initials}</div>`
+      }
+      <div class="following-info">
+        <div class="following-name">${p.name}</div>
+        <div class="following-genre">${p.handle ? '@' + p.handle + ' · ' : ''}${p.genre || 'Producer'}</div>
+      </div>
+      <button class="unfollow-btn" onclick="unfollowProducer('${p.id}')">Unfollow</button>
+    </div>`;
+  }).join("");
+}
+
+async function unfollowProducer(producerId) {
+  const card = document.getElementById("following-" + producerId);
+  if (card) { card.style.opacity = "0.5"; card.style.transform = "scale(0.97)"; }
+  await API.toggleFollow(producerId);
+  setTimeout(() => { loadFollowingList(); loadProfileData(); }, 300);
+}
+
+// ── Profile tabs ───────────────────────────────────────────────
+function switchProfileTab(tab) {
+  document.querySelectorAll(".profile-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".profile-tab-content").forEach(c => c.classList.toggle("active", c.id === "ptab-" + tab));
+  if (tab === "following") loadFollowingList();
+}
+
+// ── Save profile ───────────────────────────────────────────────
+async function saveProfile() {
+  const name = document.getElementById("pf-name").value.trim();
+  const msg  = document.getElementById("profile-msg");
+  if (!name) { showMsg(msg, "Please enter your name.", "error"); return; }
+
+  if (API.isReady()) {
+    const { error } = await supabase.from("profiles").update({ name }).eq("id", session.id);
+    if (error) { showMsg(msg, "Error: " + error.message, "error"); return; }
+    const stored = localStorage.getItem("bm_session");
+    if (stored) { const s = JSON.parse(stored); s.name = name; localStorage.setItem("bm_session", JSON.stringify(s)); }
+  }
+  showMsg(msg, "✓ Profile updated!", "success");
+  document.getElementById("sidebar-name").textContent = name;
+  document.getElementById("profile-name").textContent = name;
+  document.getElementById("profile-avatar-lg").textContent = Auth.getInitials(name);
+}
+
+// ── Change password ────────────────────────────────────────────
+async function changePassword() {
+  const pw  = document.getElementById("pf-pw").value;
+  const pw2 = document.getElementById("pf-pw2").value;
+  const msg = document.getElementById("pw-msg");
+  if (pw.length < 6) { showMsg(msg, "Password must be at least 6 characters.", "error"); return; }
+  if (pw !== pw2)    { showMsg(msg, "Passwords don't match.", "error"); return; }
+  if (!API.isReady()) { showMsg(msg, "Connect Supabase to change password.", "error"); return; }
+  const { error } = await supabase.auth.updateUser({ password: pw });
+  if (error) { showMsg(msg, "Error: " + error.message, "error"); return; }
+  showMsg(msg, "✓ Password updated!", "success");
+  document.getElementById("pf-pw").value  = "";
+  document.getElementById("pf-pw2").value = "";
+}
+
+function showMsg(el, text, type) {
+  el.textContent   = text;
+  el.style.display = "block";
+  el.style.background = type === "success" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)";
+  el.style.color      = type === "success" ? "#10B981" : "#EF4444";
+  el.style.border     = `1px solid ${type === "success" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`;
+  setTimeout(() => { el.style.display = "none"; }, 4000);
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+loadLibrary();
+</script>
+</body>
+</html>

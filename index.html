@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeatMarket — Find Your Next Hit Sound</title>
+  <meta name="description" content="BeatMarket is the premium beat marketplace for artists. Browse thousands of Trap, Drill, Lo-Fi, R&B, Afrobeats instrumentals from top producers worldwide.">
+  <meta property="og:title" content="BeatMarket — Find Your Next Hit Sound">
+  <meta property="og:description" content="Premium beat marketplace for artists. Buy beats online.">
+  <meta name="theme-color" content="#7C3AED">
+  <!-- Performance: preconnect to external origins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://supabase.co">
+  <link rel="preload" href="css/style.css" as="style">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     NAVBAR
+════════════════════════════════════ -->
+<nav id="navbar" role="navigation" aria-label="Main navigation">
+  <a href="#hero" class="nav-logo" aria-label="BeatMarket Home">
+    <div class="nav-logo-icon" aria-hidden="true">🎧</div>
+    Beat<span>Market</span>
+  </a>
+
+  <div class="nav-links" role="menubar">
+    <a href="#" class="nav-link" data-section="trending" role="menuitem">Trending</a>
+    <a href="#" class="nav-link" data-section="explore" role="menuitem">Explore</a>
+    <a href="#" class="nav-link" data-section="producers" role="menuitem">Producers</a>
+    <a href="#" class="nav-link" role="menuitem">Charts</a>
+    <a href="discover.html" class="nav-link" role="menuitem" style="background:linear-gradient(135deg,#7C3AED,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700">✨ For You</a>
+  </div>
+
+  <div class="nav-right">
+    <button id="cart-btn" aria-label="Open cart" title="Cart">
+      🛒
+      <span id="cart-badge" aria-live="polite" aria-label="Cart items">0</span>
+    </button>
+
+    <!-- Logged-out state -->
+    <div id="nav-auth-out" class="nav-auth-out">
+      <a href="login.html" class="btn-ghost">Log In</a>
+      <a href="login.html" class="btn-primary">Sign Up Free</a>
+    </div>
+
+    <!-- Logged-in state -->
+    <div id="nav-auth-in" style="display:none;position:relative">
+      <button id="nav-user-btn" style="display:flex;align-items:center;gap:0.6rem;background:var(--bg-glass-light);border:1px solid var(--border);border-radius:var(--radius-pill);padding:0.35rem 0.85rem 0.35rem 0.35rem;transition:all 0.2s" aria-haspopup="true" aria-expanded="false">
+        <div id="nav-avatar" class="dash-avatar" style="width:28px;height:28px;font-size:0.65rem;flex-shrink:0">U</div>
+        <span id="nav-username" style="font-size:0.82rem;font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">User</span>
+        <span style="font-size:0.7rem;color:var(--text-muted)">▾</span>
+      </button>
+      <!-- Dropdown -->
+      <div id="nav-dropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:200px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-card);z-index:999">
+        <div id="nav-drop-header" style="padding:0.85rem 1rem;border-bottom:1px solid var(--border)">
+          <div id="nav-drop-name" style="font-size:0.88rem;font-weight:700"></div>
+          <div id="nav-drop-role" style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px"></div>
+        </div>
+        <a id="nav-drop-dash" href="#" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;font-size:0.85rem;font-weight:500;color:var(--text-secondary);transition:background 0.15s">📊 Dashboard</a>
+        <a href="index.html" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;font-size:0.85rem;font-weight:500;color:var(--text-secondary);transition:background 0.15s">🎵 Browse Beats</a>
+        <div style="border-top:1px solid var(--border)">
+          <button id="nav-logout-btn" style="display:flex;align-items:center;gap:0.6rem;width:100%;padding:0.7rem 1rem;font-size:0.85rem;font-weight:600;color:#EF4444;transition:background 0.15s">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+
+    <button id="mobile-menu-btn" aria-label="Toggle navigation menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile Nav -->
+<div id="mobile-nav" role="menu" aria-label="Mobile navigation">
+  <a href="#trending" class="mobile-nav-link" role="menuitem">🔥 Trending</a>
+  <a href="#explore" class="mobile-nav-link" role="menuitem">🎵 Explore Beats</a>
+  <a href="#producers" class="mobile-nav-link" role="menuitem">👤 Producers</a>
+  <a href="#" class="mobile-nav-link" role="menuitem">📊 Charts</a>
+  <!-- Auth links — only shown when logged out (hidden by JS when logged in) -->
+  <div id="mobile-nav-auth-out" style="border-top:1px solid rgba(255,255,255,0.07);margin-top:0.5rem;padding-top:0.5rem;display:flex;flex-direction:column;gap:0.25rem">
+    <a href="login.html" class="mobile-nav-link" role="menuitem" style="color:rgba(255,255,255,0.5)">🔐 Log In</a>
+    <a href="login.html" class="mobile-nav-link" role="menuitem" style="color:#a78bfa;font-weight:600">✨ Sign Up Free</a>
+  </div>
+  <div id="mobile-nav-auth-in" style="border-top:1px solid rgba(255,255,255,0.07);margin-top:0.5rem;padding-top:0.5rem;display:none">
+    <a id="mobile-nav-dashboard" href="#" class="mobile-nav-link" role="menuitem">📊 My Dashboard</a>
+    <button id="mobile-nav-logout" class="mobile-nav-link" style="width:100%;text-align:left;color:#EF4444">🚪 Log Out</button>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════
+     HERO
+════════════════════════════════════ -->
+<section id="hero" aria-label="Hero - Beat Marketplace">
+  <div class="hero-bg" aria-hidden="true"></div>
+
+  <div class="hero-badge">
+    <span class="dot" aria-hidden="true"></span>
+    #1 Beat Marketplace for Artists
+  </div>
+
+  <h1 class="hero-title">
+    Find Your Next<br><span class="gradient-text">Hit Sound</span>
+  </h1>
+  <p class="hero-subtitle">
+    Discover premium beats from the world's top producers.
+    Trap, Drill, Lo-Fi, R&amp;B, Afrobeats and more.
+  </p>
+
+
+  <!-- Discover CTA -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:1.5rem 0 1.25rem;flex-wrap:wrap">
+    <a href="discover.html" id="hero-discover-btn" style="
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      padding: 0.85rem 1.75rem;
+      background: linear-gradient(135deg, #7C3AED 0%, #a855f7 100%);
+      color: #fff; font-weight: 800; font-size: 1rem;
+      border-radius: 50px; text-decoration: none;
+      box-shadow: 0 0 0 0 rgba(168,85,247,0.5);
+      animation: heroGlow 2.2s ease-in-out infinite;
+      letter-spacing: 0.01em;
+      transition: transform 0.18s;
+    ">
+      🎵 For You — Swipe Beats
+    </a>
+    <a href="#trending" style="
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.85rem 1.5rem;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.8); font-weight: 700; font-size: 0.9rem;
+      border-radius: 50px; text-decoration: none;
+      transition: all 0.18s;
+    " onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+      Browse All →
+    </a>
+  </div>
+  <style>
+    @keyframes heroGlow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.55), 0 4px 24px rgba(124,58,237,0.4); transform: translateY(0); }
+      50%      { box-shadow: 0 0 0 10px rgba(168,85,247,0), 0 8px 32px rgba(124,58,237,0.6); transform: translateY(-2px); }
+    }
+    #hero-discover-btn:hover { transform: translateY(-3px) scale(1.03) !important; }
+    #hero-discover-btn:active { transform: scale(0.97) !important; }
+  </style>
+
+  <!-- Search -->
+  <div class="hero-search">
+    <form id="search-form" role="search" action="#">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search for beats, genres, or producers..."
+        autocomplete="off"
+        aria-label="Search beats, genres or producers"
+      >
+      <button type="button" id="search-clear" aria-label="Clear search">✕</button>
+    </form>
+  </div>
+
+  <!-- Quick Tags -->
+  <div class="hero-tags" role="list" aria-label="Quick genre search">
+    <button class="hero-tag" data-genre="Trap" role="listitem">🎵 Trap</button>
+    <button class="hero-tag" data-genre="Drill" role="listitem">🔥 Drill</button>
+    <button class="hero-tag" data-genre="Lo-Fi" role="listitem">🌙 Lo-Fi</button>
+    <button class="hero-tag" data-genre="R&B" role="listitem">💜 R&amp;B</button>
+    <button class="hero-tag" data-genre="Afrobeats" role="listitem">🌍 Afrobeats</button>
+    <button class="hero-tag" data-genre="Rage" role="listitem">⚡ Rage</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="hero-stats" role="list" aria-label="Platform statistics">
+    <div class="hero-stat" role="listitem">
+      <div class="hero-stat-value" id="stat-beats" aria-label="Beats available">—</div>
+      <div class="hero-stat-label">Beats Available</div>
+    </div>
+    <div class="hero-stat" role="listitem">
+      <div class="hero-stat-value" id="stat-producers" aria-label="Producers">—</div>
+      <div class="hero-stat-label">Producers</div>
+    </div>
+    <div class="hero-stat" role="listitem">
+      <div class="hero-stat-value" id="stat-artists" aria-label="Artists">—</div>
+      <div class="hero-stat-label">Artists</div>
+    </div>
+  </div>
+
+
+</section>
+
+<!-- ════════════════════════════════════
+     TRENDING TRACKS
+════════════════════════════════════ -->
+<section id="trending" aria-label="Trending tracks">
+  <div class="section-header">
+    <h2 class="section-title">🔥 Trending <span>Tracks</span></h2>
+    <a href="#explore" class="section-link">View All →</a>
+  </div>
+  <div id="trending-list" role="list" aria-label="Trending beat list"></div>
+</section>
+
+<!-- ════════════════════════════════════
+     EXPLORE / ALL BEATS
+════════════════════════════════════ -->
+<section id="explore" aria-label="Explore all beats">
+  <div class="section-header">
+    <h2 class="section-title">🎵 Explore <span>Beats</span></h2>
+  </div>
+
+  <!-- Genre Filter -->
+  <div id="genre-filters" role="tablist" aria-label="Filter by genre"></div>
+
+  <div id="all-beats-section">
+    <div id="all-beats-grid" role="list" aria-label="Beat catalog"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     FEATURED PRODUCERS
+════════════════════════════════════ -->
+<section id="producers" aria-label="Featured producers">
+  <div class="section-header">
+    <h2 class="section-title">👤 Featured <span>Producers</span></h2>
+    <a href="#" class="section-link">View All →</a>
+  </div>
+  <div id="producers-grid" role="list" aria-label="Producer list"></div>
+</section>
+
+<!-- ════════════════════════════════════
+     FOOTER
+════════════════════════════════════ -->
+<footer role="contentinfo">
+  <div class="footer-logo">Beat<span>Market</span></div>
+  <nav class="footer-links" aria-label="Footer navigation">
+    <a href="page.html?p=about">About</a>
+    <a href="page.html?p=blog">Blog</a>
+    <a href="page.html?p=pricing">Pricing</a>
+    <a href="page.html?p=faq">FAQ</a>
+    <a href="page.html?p=terms">Terms</a>
+    <a href="page.html?p=privacy">Privacy</a>
+  </nav>
+  <div class="footer-copy" id="footer-copy">© 2026 BeatMarket. All rights reserved.</div>
+</footer>
+
+<!-- ════════════════════════════════════
+     MINI AUDIO PLAYER (sticky bottom)
+════════════════════════════════════ -->
+<div id="mini-player" role="region" aria-label="Audio player" aria-live="polite">
+  <img id="mini-cover" src="" alt="Currently playing beat" width="48" height="48">
+
+  <div class="mini-track-info">
+    <div id="mini-title">Beat Title</div>
+    <div id="mini-producer">Producer</div>
+  </div>
+
+  <!-- Waveform animation -->
+  <div id="mini-waveform" aria-hidden="true">
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="player-controls">
+    <div class="player-btns">
+      <button id="prev-btn" class="player-ctrl-btn" aria-label="Previous track">⏮</button>
+      <button id="play-pause-btn" aria-label="Play or pause">
+        <span id="play-pause-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+      </button>
+      <button id="next-btn" class="player-ctrl-btn" aria-label="Next track">⏭</button>
+    </div>
+    <div class="player-progress" role="group" aria-label="Playback progress">
+      <span id="current-time" class="time-label" aria-label="Current time">0:00</span>
+      <div id="progress-bar" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="progress-fill"></div>
+        <div id="progress-thumb"></div>
+      </div>
+      <span id="duration" class="time-label" aria-label="Duration">0:00</span>
+    </div>
+  </div>
+
+  <div class="player-right">
+    <button id="mini-add-btn" aria-label="Add beat to cart">+ ADD $0.00</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     CART SIDEBAR
+════════════════════════════════════ -->
+<div id="cart-overlay" aria-hidden="true"></div>
+<aside id="cart-sidebar" role="complementary" aria-label="Shopping cart" aria-hidden="true">
+  <div class="cart-header">
+    <h2 class="cart-title">🛒 Your Cart</h2>
+    <button id="cart-close-btn" aria-label="Close cart">✕</button>
+  </div>
+  <div id="cart-items-list" aria-live="polite" aria-label="Cart items">
+    <div class="cart-empty">
+      <div class="cart-empty-icon">🎵</div>
+      <p>Your cart is empty</p>
+      <span>Add beats to get started</span>
+    </div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span id="cart-total">$0.00</span>
+    </div>
+    <button id="checkout-btn">Checkout →</button>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════
+     LICENSE MODAL
+════════════════════════════════════ -->
+<div id="license-modal-overlay" aria-hidden="true"></div>
+<div id="license-modal" role="dialog" aria-modal="true" aria-labelledby="license-beat-title" aria-hidden="true">
+  <div class="modal-header">
+    <img id="license-beat-cover" src="" alt="" width="60" height="60">
+    <div class="modal-beat-info">
+      <h2 id="license-beat-title">Beat Title</h2>
+      <div id="license-beat-producer">Producer</div>
+      <div class="modal-subtitle">Select a license to add to cart</div>
+    </div>
+    <button id="license-close-btn" aria-label="Close license modal">✕</button>
+  </div>
+  <div id="license-cards" role="list" aria-label="Available licenses"></div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" crossorigin></script>
+<script src="js/supabase.js?v=1"></script>
+<script src="js/auth.js?v=1"></script>
+<script src="js/api.js?v=8"></script>
+<script defer src="js/stripe.js?v=1"></script>
+<script defer src="js/data.js?v=3"></script>
+<script defer src="js/player.js?v=4"></script>
+<script defer src="js/cart.js?v=1"></script>
+<script defer src="js/app.js?v=3"></script>
+<script>
+// ── Auth state in navbar ──────────────────────────────────────────
+(function () {
+  const session = Auth.getSession();
+  const navOut = document.getElementById('nav-auth-out');
+  const navIn  = document.getElementById('nav-auth-in');
+
+  if (session) {
+    navOut.style.display = 'none';
+    navIn.style.display  = 'flex';
+
+    const initials = Auth.getInitials(session.name);
+    const avatar   = document.getElementById('nav-avatar');
+    avatar.textContent = initials;
+
+    // Color by role
+    const colors = { admin: 'linear-gradient(135deg,#D97706,#EA580C)', seller: 'linear-gradient(135deg,#7C3AED,#9B59FF)', buyer: 'linear-gradient(135deg,#10B981,#059669)' };
+    avatar.style.background = colors[session.role] || colors.buyer;
+
+    document.getElementById('nav-username').textContent   = session.name;
+    document.getElementById('nav-drop-name').textContent  = session.name;
+    document.getElementById('nav-drop-role').textContent  = session.email;
+
+    const dashLink = document.getElementById('nav-drop-dash');
+    if (session.role === 'admin')       dashLink.href = 'admin.html';
+    else if (session.role === 'seller') dashLink.href = 'seller.html';
+    else { dashLink.href = 'buyer.html'; dashLink.textContent = '🎧 My Library'; }
+
+    // Also show seller/admin nav links
+    if (session.role === 'seller') {
+      const sellerLink = document.createElement('a');
+      sellerLink.href = 'seller.html';
+      sellerLink.className = 'nav-link';
+      sellerLink.textContent = '🎤 Dashboard';
+      document.querySelector('.nav-links').appendChild(sellerLink);
+    }
+    if (session.role === 'admin') {
+      const adminLink = document.createElement('a');
+      adminLink.href = 'admin.html';
+      adminLink.className = 'nav-link';
+      adminLink.style.color = '#F59E0B';
+      adminLink.textContent = '⚙️ Admin';
+      document.querySelector('.nav-links').appendChild(adminLink);
+    }
+
+    // Dropdown toggle
+    const userBtn  = document.getElementById('nav-user-btn');
+    const dropdown = document.getElementById('nav-dropdown');
+    userBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = dropdown.style.display === 'block';
+      dropdown.style.display = open ? 'none' : 'block';
+      userBtn.setAttribute('aria-expanded', String(!open));
+    });
+    document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+
+    document.getElementById('nav-logout-btn').addEventListener('click', () => {
+      Auth.logout();
+      window.location.reload();
+    });
+  }
+
+  // Hover styles for dropdown links
+  document.querySelectorAll('#nav-dropdown a, #nav-logout-btn').forEach((el) => {
+    el.addEventListener('mouseenter', () => el.style.background = 'var(--bg-glass-light)');
+    el.addEventListener('mouseleave', () => el.style.background = 'transparent');
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seller Dashboard — BeatMarket</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <style>
+    /* ── Critical mobile overrides (inline = cache-proof) ── */
+    @media (max-width: 900px) {
+      .hide-mobile { display: none !important; }
+      .dash-main { margin-left: 0 !important; }
+      .dash-sidebar { transform: translateX(-100%); }
+      .dash-sidebar.open { transform: translateX(0); box-shadow: 4px 0 40px rgba(0,0,0,.6); }
+      .dash-menu-btn { display: flex !important; }
+      .dash-topbar { padding: 0 0.85rem !important; gap: 0.5rem !important; }
+      .dash-page-title { font-size: 0.85rem !important; max-width: 38vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .dash-content { padding: 1.25rem 1rem !important; }
+      .stat-cards { grid-template-columns: 1fr 1fr !important; gap: 0.75rem !important; }
+
+      /* KEY FIX: remove overflow:hidden so inner scroll works */
+      .dash-section { overflow: visible !important; }
+
+      /* Table containers scroll horizontally */
+      .dash-section > [style*="overflow-x"],
+      .dash-section-body > [style*="overflow-x"],
+      [style*="overflow-x:auto"] {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-width: 100%;
+      }
+      .data-table { min-width: 480px; }
+
+      /* Chart wraps scroll too */
+      .chart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .chart-svg  { min-width: 380px; }
+
+      /* Section header search bar wraps below title */
+      .dash-section-header { flex-wrap: wrap; gap: 0.5rem !important; }
+      .table-search { width: 100% !important; order: 3; }
+      .dash-section-header > div { flex-wrap: wrap; gap: 0.5rem; }
+
+      /* Payout / earnings grid → 1 column */
+      .payout-grid { grid-template-columns: 1fr !important; }
+
+      /* Upload form + settings → 1 column */
+      .upload-form .form-grid { grid-template-columns: 1fr !important; }
+      .form-row { grid-template-columns: 1fr !important; }
+    }
+
+    @media (max-width: 550px) {
+      .dash-content { padding: 1rem 0.75rem !important; }
+      .stat-card { padding: 1rem 0.75rem !important; }
+      .stat-value { font-size: 1.4rem !important; }
+      .stat-icon  { font-size: 1.4rem !important; }
+      .dash-section-header { padding: 0.85rem 1rem !important; }
+      .dash-section-body   { padding: 0.85rem 1rem !important; }
+      .upload-form { padding: 1rem !important; }
+
+      /* Upload Beat topbar button → icon only */
+      .dash-topbar-right .btn-primary .btn-label { display: none !important; }
+      .dash-topbar-right .btn-primary::before { content: attr(data-icon); font-size: 1rem; }
+      .dash-topbar-right .btn-primary { padding: 0.45rem 0.7rem !important; }
+
+      /* Hide less-important table columns on tiny screens */
+      #my-beats-table th:nth-child(4), /* BPM */
+      #my-beats-table td:nth-child(4),
+      #my-beats-table th:nth-child(7), /* Sales */
+      #my-beats-table td:nth-child(7) { display: none !important; }
+
+      #recent-orders-table th:nth-child(3), /* License */
+      #recent-orders-table td:nth-child(3),
+      #recent-orders-table th:nth-child(5), /* Date */
+      #recent-orders-table td:nth-child(5) { display: none !important; }
+
+      /* Bigger tap targets for action buttons */
+      .tbl-btn { font-size: 0.75rem !important; padding: 0.38rem 0.65rem !important; min-height: 36px; }
+      .tbl-btn-group { gap: 5px !important; flex-wrap: wrap; }
+
+      /* File drop areas on mobile */
+      .file-drop { padding: 1.5rem 0.75rem !important; }
+      .file-drop-text { font-size: 0.82rem !important; }
+      .file-drop-sub { font-size: 0.72rem !important; }
+    }
+  </style>
+</head>
+<body class="dash-body">
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="dash-sidebar" id="dash-sidebar">
+  <a href="index.html" class="dash-sidebar-logo">
+    <div class="dash-sidebar-logo-icon">🎧</div>
+    Beat<span>Market</span>
+  </a>
+
+  <div class="dash-user-info">
+    <div class="dash-avatar" id="sidebar-avatar">AP</div>
+    <div>
+      <div class="dash-user-name" id="sidebar-name">Apollo Beats</div>
+      <span class="dash-role-badge badge seller">Seller</span>
+    </div>
+  </div>
+
+  <nav class="dash-nav" aria-label="Seller navigation">
+    <div class="dash-nav-section">Menu</div>
+    <a class="dash-nav-link active" href="#" data-section="overview" onclick="showSection('overview');return false">📊 <span class="nav-lbl">Overview</span></a>
+    <a class="dash-nav-link" href="#" data-section="beats" onclick="showSection('beats');return false">🎵 <span class="nav-lbl">My Beats</span></a>
+    <a class="dash-nav-link" href="#" data-section="upload" onclick="showSection('upload');return false">⬆️ <span class="nav-lbl">Upload Beat</span></a>
+    <a class="dash-nav-link" href="#" data-section="earnings" onclick="showSection('earnings');return false">💰 <span class="nav-lbl">Earnings</span></a>
+    <a class="dash-nav-link" href="#" data-section="orders" onclick="showSection('orders');return false">🛒 <span class="nav-lbl">Orders</span></a>
+    <div class="dash-nav-section" style="margin-top:1rem">Account</div>
+    <a class="dash-nav-link" href="#" data-section="settings" onclick="showSection('settings');return false">⚙️ <span class="nav-lbl">Settings</span></a>
+    <a href="index.html" class="dash-nav-link">🏠 <span class="nav-lbl">View Store</span></a>
+  </nav>
+
+  <div class="dash-sidebar-footer">
+    <button class="btn-logout" id="logout-btn">🚪 <span>Log Out</span></button>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<main class="dash-main">
+  <div class="dash-topbar">
+    <button class="dash-menu-btn" id="dash-menu-btn" aria-label="Open menu">☰</button>
+    <div class="dash-page-title" id="dash-page-title">📊 Overview</div>
+    <div class="dash-topbar-right">
+      <button class="btn-primary" data-icon="+" style="font-size:0.8rem;padding:0.45rem 1rem;white-space:nowrap" onclick="showSection('upload')"><span class="btn-label">+ Upload Beat</span></button>
+    </div>
+  </div>
+
+  <div class="dash-content">
+
+    <!-- ── OVERVIEW ── -->
+    <section id="section-overview">
+      <div class="stat-cards">
+        <div class="stat-card purple">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value" id="seller-revenue">$0</div>
+          <div class="stat-change" style="color:var(--text-muted)">No data yet</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">🛒</div>
+          <div class="stat-label">Total Sales</div>
+          <div class="stat-value" id="seller-sales">0</div>
+          <div class="stat-change" style="color:var(--text-muted)">No data yet</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon">🎵</div>
+          <div class="stat-label">Active Beats</div>
+          <div class="stat-value" id="seller-beats">0</div>
+          <div class="stat-change" style="color:var(--text-muted)">No data yet</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon">👥</div>
+          <div class="stat-label">Followers</div>
+          <div class="stat-value" id="seller-followers">0</div>
+          <div class="stat-change" style="color:var(--text-muted)">No data yet</div>
+        </div>
+      </div>
+
+      <!-- Revenue Chart -->
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">📈 Monthly Revenue</span>
+          <span style="font-size:0.78rem;color:var(--text-muted)">Last 6 months</span>
+        </div>
+        <div class="dash-section-body">
+          <div class="chart-wrap">
+            <svg class="chart-svg" id="revenue-chart" viewBox="0 0 600 180" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Orders preview -->
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">🛒 Recent Orders</span>
+          <button class="tbl-btn primary" onclick="showSection('orders')">View All</button>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table class="data-table" id="recent-orders-table" style="min-width:420px">
+            <thead><tr>
+              <th>Beat</th><th>Buyer</th><th>License</th><th>Amount</th><th>Date</th>
+            </tr></thead>
+            <tbody id="recent-orders-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── MY BEATS ── -->
+    <section id="section-beats" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">🎵 My Beats</span>
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <input type="search" class="table-search" id="beat-search" placeholder="Search beats…" style="min-width:120px;flex:1">
+            <button class="btn-primary" style="font-size:0.8rem;padding:0.45rem 1rem;white-space:nowrap" onclick="showSection('upload')">+ New</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table class="data-table" id="my-beats-table" style="min-width:520px">
+            <thead><tr>
+              <th>Cover</th><th>Title</th><th>Genre</th><th>BPM</th><th>Price</th><th>Plays</th><th>Sales</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="my-beats-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── UPLOAD ── -->
+    <section id="section-upload" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">⬆️ Upload New Beat</span>
+        </div>
+        <div class="dash-section-body">
+          <form class="upload-form" id="upload-form" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Beat Title *</label>
+                <input type="text" id="up-title" placeholder="e.g. Midnight Drive" required>
+              </div>
+              <div class="form-group">
+                <label>Genre</label>
+                <select id="up-genre">
+                  <option>Trap</option><option>Drill</option><option>Lo-Fi</option>
+                  <option>R&amp;B</option><option>Afrobeats</option><option>Rage</option>
+                  <option>Pop</option><option>Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>BPM</label>
+                <input type="number" id="up-bpm" placeholder="140" min="40" max="300">
+              </div>
+              <div class="form-group">
+                <label>Key</label>
+                <select id="up-key">
+                  <option>A Minor</option><option>A Major</option><option>Bb Minor</option>
+                  <option>Bb Major</option><option>B Minor</option><option>B Major</option>
+                  <option>C Minor</option><option>C Major</option><option>C# Minor</option>
+                  <option>D Minor</option><option>D Major</option><option>Eb Minor</option>
+                  <option>E Minor</option><option>E Major</option><option>F Minor</option>
+                  <option>F# Minor</option><option>G Minor</option><option>G Major</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Base Price ($)</label>
+                <input type="number" id="up-price" placeholder="29.99" min="0" step="0.01">
+              </div>
+              <div class="form-group">
+                <label>Tags (comma separated)</label>
+                <input type="text" id="up-tags" placeholder="dark, melodic, hard">
+              </div>
+              <div class="form-group form-group-full">
+                <label>Description</label>
+                <textarea id="up-desc" placeholder="Describe your beat, mood, inspiration…"></textarea>
+              </div>
+              <div class="form-group form-group-full">
+                <label>Cover Art</label>
+                <div class="file-drop" id="cover-drop">
+                  <input type="file" accept="image/*" id="up-cover" onchange="handleCoverPreview(this)">
+                  <div class="file-drop-icon">🖼️</div>
+                  <div class="file-drop-text">Drop cover art here or click to browse</div>
+                  <div class="file-drop-sub">PNG, JPG — max 5MB</div>
+                </div>
+                <img id="cover-preview" style="display:none;width:80px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px">
+              </div>
+              <div class="form-group form-group-full">
+                <label>Audio File</label>
+                <div class="file-drop">
+                  <input type="file" accept="audio/*" id="up-audio">
+                  <div class="file-drop-icon">🎵</div>
+                  <div class="file-drop-text">Drop audio file here or click to browse</div>
+                  <div class="file-drop-sub">MP3, WAV — max 50MB</div>
+                </div>
+              </div>
+            </div>
+            <div id="upload-success" style="display:none;margin-bottom:1rem" class="demo-hint">
+              ✅ Beat uploaded! It's now live in the store.
+            </div>
+            <button type="submit" class="upload-btn">🚀 Submit Beat for Review</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── EARNINGS ── -->
+    <section id="section-earnings" class="hidden">
+      <div class="stat-cards">
+        <div class="stat-card purple"><div class="stat-icon">💳</div><div class="stat-label">Available Balance</div><div class="stat-value" id="earn-balance">$0</div><div class="stat-change" style="color:var(--text-muted)">No earnings yet</div></div>
+        <div class="stat-card green"><div class="stat-icon">📈</div><div class="stat-label">This Month</div><div class="stat-value" id="earn-month">$0</div><div class="stat-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card amber"><div class="stat-icon">🔒</div><div class="stat-label">Pending</div><div class="stat-value" id="earn-pending">$0</div><div class="stat-change" style="color:var(--text-muted)">Nothing pending</div></div>
+        <div class="stat-card blue"><div class="stat-icon">💵</div><div class="stat-label">All Time</div><div class="stat-value" id="earn-total">$0</div><div class="stat-change" style="color:var(--text-muted)">No data yet</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:0" class="payout-grid">
+
+        <!-- Request form -->
+        <div class="dash-section">
+          <div class="dash-section-header">
+            <span class="dash-section-title">💸 Request Payout</span>
+          </div>
+          <div class="dash-section-body">
+            <div class="form-group">
+              <label>Payout Method</label>
+              <select id="payout-method" style="width:100%;padding:0.65rem 0.9rem;border-radius:var(--radius-md);background:var(--bg-secondary);border:1.5px solid var(--border);color:var(--text-primary);font-family:inherit;font-size:0.85rem;outline:none">
+                <option value="paypal">PayPal</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="stripe">Stripe</option>
+                <option value="crypto">Crypto (USDT/BTC)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label id="payout-details-label">PayPal Email</label>
+              <input type="text" id="payout-details" placeholder="your@paypal.com">
+            </div>
+            <div class="form-group">
+              <label>Amount (USD) <span style="color:var(--text-muted);font-size:0.75rem">— min $50</span></label>
+              <input type="number" id="payout-amount" placeholder="500" min="50" step="0.01">
+            </div>
+            <div id="payout-msg" style="display:none;padding:0.6rem 0.9rem;border-radius:var(--radius-sm);font-size:0.83rem;margin-bottom:0.75rem"></div>
+            <button class="upload-btn" style="width:100%" onclick="submitPayout()">💸 Submit Payout Request</button>
+          </div>
+        </div>
+
+        <!-- Revenue chart -->
+        <div class="dash-section">
+          <div class="dash-section-header">
+            <span class="dash-section-title">📊 Revenue By License</span>
+          </div>
+          <div class="dash-section-body">
+            <div class="chart-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+              <svg id="license-chart" class="chart-svg" viewBox="0 0 600 180" preserveAspectRatio="none" style="min-width:320px"></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payout history -->
+      <div class="dash-section" style="margin-top:1.25rem">
+        <div class="dash-section-header">
+          <span class="dash-section-title">📋 Payout History</span>
+          <button class="tbl-btn" onclick="loadMyPayouts()" style="font-size:0.78rem;padding:0.35rem 0.75rem">🔄 Refresh</button>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table class="data-table" style="min-width:460px">
+            <thead><tr>
+              <th>Date</th><th>Amount</th><th>Method</th><th>Payment Details</th><th>Status</th><th>Note</th><th>Action</th>
+            </tr></thead>
+            <tbody id="payout-history-body">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">No payout requests yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ── ORDERS ── -->
+    <section id="section-orders" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">🛒 All Orders</span>
+          <input type="search" class="table-search" placeholder="Search orders…">
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table class="data-table" style="min-width:460px">
+            <thead><tr>
+              <th>#</th><th>Beat</th><th>Buyer</th><th>License</th><th>Amount</th><th>Date</th><th>Status</th>
+            </tr></thead>
+            <tbody id="all-orders-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section id="section-settings" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header"><span class="dash-section-title">⚙️ Profile Settings</span></div>
+        <div class="dash-section-body">
+          <div class="upload-form">
+            <div class="form-grid">
+              <div class="form-group"><label>Producer Name</label><input type="text" id="set-name" placeholder="Your producer name"></div>
+              <div class="form-group"><label>Handle</label><input type="text" id="set-handle" placeholder="@yourhandle"></div>
+              <div class="form-group"><label>Email</label><input type="email" id="set-email" placeholder="your@email.com" readonly></div>
+              <div class="form-group"><label>Main Genre</label><select id="set-genre"><option>Trap</option><option>Drill</option><option>Lo-Fi</option><option>R&amp;B</option><option>Afrobeats</option><option>Rage</option><option>Pop</option><option>Other</option></select></div>
+              <div class="form-group form-group-full"><label>Bio</label><textarea id="set-bio" placeholder="Tell artists about yourself…"></textarea></div>
+            </div>
+            <button class="upload-btn" id="settings-save-btn">Save Changes</button>
+          </div>
+        </div>
+      </div>
+      <div class="dash-section" style="margin-top:1rem">
+        <div class="dash-section-header"><span class="dash-section-title">🔒 Change Password</span></div>
+        <div class="dash-section-body">
+          <div class="upload-form">
+            <div class="form-grid">
+              <div class="form-group"><label>Current Password</label><input type="password" placeholder="••••••••"></div>
+              <div class="form-group"><label>New Password</label><input type="password" placeholder="••••••••"></div>
+            </div>
+            <button class="upload-btn" id="password-save-btn">Update Password</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /dash-content -->
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/supabase.js?v=1"></script>
+<script src="js/auth.js?v=1"></script>
+<script src="js/api.js?v=8"></script>
+<script src="js/data.js?v=3"></script>
+<script>
+// ── Auth guard ────────────────────────────────────────────────────────
+const session = Auth.requireRole("seller", "admin");
+if (session) {
+  document.getElementById("sidebar-name").textContent  = session.name;
+  document.getElementById("sidebar-avatar").textContent = Auth.getInitials(session.name);
+}
+
+// ── Sidebar toggle (mobile) ───────────────────────────────────────────
+const _sellerBackdrop = document.createElement("div");
+_sellerBackdrop.style.cssText = "display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:150";
+document.body.appendChild(_sellerBackdrop);
+
+function _toggleSellerSidebar(forceClose) {
+  const sidebar = document.getElementById("dash-sidebar");
+  const isOpen = sidebar.classList.contains("open");
+  const isMobile = window.innerWidth <= 900;
+  if (forceClose || isOpen) {
+    sidebar.classList.remove("open");
+    _sellerBackdrop.style.display = "none";
+  } else {
+    sidebar.classList.add("open");
+    if (isMobile) _sellerBackdrop.style.display = "block";
+  }
+}
+document.getElementById("dash-menu-btn").addEventListener("click", () => _toggleSellerSidebar());
+_sellerBackdrop.addEventListener("click", () => _toggleSellerSidebar(true));
+
+document.getElementById("logout-btn").addEventListener("click", () => {
+  Auth.logout(); window.location.href = "login.html";
+});
+
+// ── Section navigation ────────────────────────────────────────────────
+const SECTION_TITLES = { overview:"📊 Overview", beats:"🎵 My Beats", upload:"⬆️ Upload Beat", earnings:"💰 Earnings", orders:"🛒 Orders", settings:"⚙️ Settings" };
+function showSection(id) {
+  document.querySelectorAll(".dash-main section").forEach((s) => s.classList.add("hidden"));
+  document.getElementById("section-" + id).classList.remove("hidden");
+  document.querySelectorAll(".dash-nav-link").forEach((l) => l.classList.remove("active"));
+  const link = document.querySelector(`.dash-nav-link[data-section="${id}"]`);
+  if (link) link.classList.add("active");
+  document.getElementById("dash-page-title").textContent = SECTION_TITLES[id] || id;
+  // Close sidebar + hide backdrop (mobile)
+  _toggleSellerSidebar(true);
+  // Auto-load data for specific sections
+  if (id === "earnings") loadMyPayouts();
+}
+
+// ── Chart helper ──────────────────────────────────────────────────────
+function drawBarChart(svgId, data, color) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const W=600, H=180, pad=40, maxVal=Math.max(...data.map((d)=>d.value)), barW=(W-pad*2)/data.length, chartH=H-40;
+  svg.innerHTML = data.map((d,i)=>{
+    const bh=(d.value/maxVal)*chartH, x=pad+i*barW+barW*0.15, y=H-bh-20, bw=barW*0.7;
+    return `<rect class="chart-bar" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4" fill="${color}" opacity="0.85"><title>$${d.value.toLocaleString()}</title></rect>
+      <text x="${x+bw/2}" y="${H-4}" text-anchor="middle" font-size="10" fill="#6B7280">${d.label}</text>
+      <text x="${x+bw/2}" y="${y-5}" text-anchor="middle" font-size="10" fill="#9999bb">$${(d.value/1000).toFixed(1)}K</text>`;
+  }).join("");
+}
+
+// ── Render beats table ────────────────────────────────────────────────
+let allMyBeats = [];
+async function loadMyBeats() {
+  const tbody = document.getElementById("my-beats-body");
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem">Loading…</td></tr>`;
+
+  if (API.isReady() && session) {
+    const { data, error } = await supabase
+      .from("beats")
+      .select("*")
+      .eq("producer_id", session.id)
+      .order("created_at", { ascending: false });
+    allMyBeats = error ? [] : (data || []);
+  } else {
+    // Fallback: show empty when no Supabase
+    allMyBeats = [];
+  }
+  renderMyBeats();
+}
+
+function renderMyBeats(filter) {
+  const beats = filter
+    ? allMyBeats.filter((b) => (b.title||"").toLowerCase().includes(filter) || (b.genre||"").toLowerCase().includes(filter))
+    : allMyBeats;
+
+  const tbody = document.getElementById("my-beats-body");
+  if (!beats.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem">No beats uploaded yet. <a href="#" onclick="showSection('upload')" style="color:var(--purple)">Upload your first beat →</a></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = beats.map((b) => {
+    const cover  = b.cover_url || b.cover || "";
+    const price  = parseFloat(b.price || 0).toFixed(2);
+    const plays  = b.plays || 0;
+    const status = b.status || "pending";
+    const statusColor = { active:"active", pending:"buyer", rejected:"danger", inactive:"danger" }[status] || "buyer";
+    return `<tr>
+      <td>${cover ? `<img src="${cover}" class="beat-thumb" alt="${b.title}">` : `<div class="beat-thumb" style="background:var(--bg-secondary);border-radius:6px"></div>`}</td>
+      <td style="font-weight:700">${b.title}</td>
+      <td><span class="badge active">${b.genre}</span></td>
+      <td>${b.bpm || "—"}</td>
+      <td>$${price}</td>
+      <td>${formatNumber(plays)}</td>
+      <td>—</td>
+      <td><span class="badge ${statusColor}">${status}</span></td>
+      <td>
+        <div class="tbl-btn-group">
+          <button class="tbl-btn danger" onclick="deleteBeat('${b.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function deleteBeat(id) {
+  if (!confirm("Delete this beat permanently?")) return;
+  if (API.isReady()) {
+    await supabase.from("beats").delete().eq("id", id);
+    allMyBeats = allMyBeats.filter((b) => b.id !== id);
+    renderMyBeats();
+  }
+}
+
+document.getElementById("beat-search").addEventListener("input", (e) => renderMyBeats(e.target.value.toLowerCase()));
+
+// ── Render orders ─────────────────────────────────────────────────────
+async function loadOrders() {
+  let orders = [];
+  if (API.isReady() && session) {
+    const { data } = await supabase
+      .from("orders")
+      .select("*, beats(title), profiles!orders_buyer_id_fkey(name)")
+      .eq("producer_id", session.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    orders = data || [];
+  }
+
+  // Build month-by-month revenue chart from real orders
+  function _buildMonthlyData(orders) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    return Array.from({length:6}, (_,i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      const value = orders
+        .filter(o => { const od = new Date(o.created_at); return od.getMonth() === d.getMonth() && od.getFullYear() === d.getFullYear(); })
+        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
+      return { label: months[d.getMonth()], value: Math.round(value * 100) / 100 };
+    });
+  }
+
+  function _showEmptyChart(svgId, msg) {
+    const svg = document.getElementById(svgId);
+    if (svg) svg.innerHTML = `<text x="300" y="95" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="13" font-family="Inter,sans-serif">${msg}</text>`;
+  }
+
+  const renderRow = (o, i) => `<tr>
+    <td style="color:var(--text-muted);font-size:0.75rem">${o.id?.slice(-6) || '#' + (i+1)}</td>
+    <td style="font-weight:700">${o.beats?.title || '—'}</td>
+    <td>${o.profiles?.name || o.buyer_name || '—'}</td>
+    <td><span class="badge seller">${o.license_type || '—'}</span></td>
+    <td style="font-weight:700;color:var(--green)">$${parseFloat(o.amount||0).toFixed(2)}</td>
+    <td style="color:var(--text-muted)">${(o.created_at||'').slice(0,10)}</td>
+    <td><span class="badge completed">${o.status || 'completed'}</span></td>
+  </tr>`;
+
+  const recentEl = document.getElementById('recent-orders-body');
+  const allEl    = document.getElementById('all-orders-body');
+  if (recentEl) recentEl.innerHTML = orders.slice(0,5).map(renderRow).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:1.5rem">No orders yet</td></tr>`;
+  if (allEl)    allEl.innerHTML    = orders.map(renderRow).join('')    || `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:1.5rem">No orders yet</td></tr>`;
+
+  // Build revenue chart from real orders
+  const chartData = _buildMonthlyData(orders);
+  if (chartData.some(d => d.value > 0)) {
+    drawBarChart('revenue-chart', chartData, '#7C3AED');
+  } else {
+    _showEmptyChart('revenue-chart', 'No revenue yet — your chart will appear after your first sale');
+  }
+}
+
+
+// Stats and charts init together
+async function loadStats() {
+  if (!API.isReady() || !session) {
+    _showEmptyChart('license-chart', 'Connect Supabase to see your earnings breakdown');
+    return;
+  }
+  const { data: orders } = await supabase.from('orders').select('amount, license_type, created_at').eq('producer_id', session.id);
+  const { data: beats  } = await supabase.from('beats').select('id').eq('producer_id', session.id).eq('status','active');
+  const { data: follows} = await supabase.from('follows').select('id').eq('producer_id', session.id);
+  const allOrders = orders || [];
+  const total = allOrders.reduce((sum,o) => sum + parseFloat(o.amount), 0);
+
+  document.querySelector('#section-overview .stat-cards .stat-card.purple .stat-value').textContent  = `$${total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  document.querySelector('#section-overview .stat-cards .stat-card.green .stat-value').textContent   = String(allOrders.length);
+  document.querySelector('#section-overview .stat-cards .stat-card.amber .stat-value').textContent   = String((beats||[]).length);
+  document.querySelector('#section-overview .stat-cards .stat-card.blue .stat-value').textContent    = formatNumber((follows||[]).length);
+
+  // License breakdown chart
+  const byLicense = {};
+  allOrders.forEach(o => { const k = o.license_type || 'Other'; byLicense[k] = (byLicense[k]||0) + parseFloat(o.amount||0); });
+  const licData = Object.entries(byLicense).map(([label, value]) => ({ label, value: Math.round(value) }));
+  if (licData.length) {
+    drawBarChart('license-chart', licData, '#10B981');
+  } else {
+    _showEmptyChart('license-chart', 'No sales yet — your license breakdown will appear here');
+  }
+}
+
+// Placeholder empty charts on load (replaced with real data after init)
+_showEmptyChart('revenue-chart', 'Loading…');
+_showEmptyChart('license-chart', 'Loading…');
+
+// ── Payout method label ─────────────────────────────────────────
+const METHOD_LABELS = { paypal:"PayPal Email", bank:"Bank Account / IBAN", stripe:"Stripe Email / Account ID", crypto:"Wallet Address (USDT TRC20 / BTC)" };
+const METHOD_PHOLDS = { paypal:"your@paypal.com", bank:"GB29 NWBK 6016 1331 9268 19", stripe:"your@stripe.com", crypto:"TRC20: TWd... / BTC: 1A1zP..." };
+document.getElementById("payout-method").addEventListener("change", function() {
+  const m = this.value;
+  document.getElementById("payout-details-label").textContent  = METHOD_LABELS[m] || "Payment Details";
+  document.getElementById("payout-details").placeholder        = METHOD_PHOLDS[m] || "";
+});
+
+// ── Submit payout request ──────────────────────────────────────
+function showPayoutMsg(text, type) { // type: 'success' | 'error' | 'info'
+  const el = document.getElementById("payout-msg");
+  el.textContent = text;
+  el.style.display = "block";
+  el.style.background = type === "success" ? "rgba(16,185,129,0.15)" : type === "error" ? "rgba(239,68,68,0.15)" : "rgba(124,58,237,0.12)";
+  el.style.color      = type === "success" ? "var(--green)"          : type === "error" ? "var(--red)"           : "var(--purple-light)";
+  el.style.border     = `1px solid ${type === "success" ? "rgba(16,185,129,0.3)" : type === "error" ? "rgba(239,68,68,0.3)" : "rgba(124,58,237,0.3)"}`;
+}
+
+async function submitPayout() {
+  const amount  = parseFloat(document.getElementById("payout-amount").value);
+  const method  = document.getElementById("payout-method").value;
+  const details = document.getElementById("payout-details").value.trim();
+
+  if (!amount || amount < 50)  { showPayoutMsg("Minimum payout is $50.", "error"); return; }
+  if (!details)                { showPayoutMsg("Please enter your payment details.", "error"); return; }
+
+  if (!API.isReady()) {
+    showPayoutMsg("Supabase not configured — connect your database to use payouts.", "error");
+    return;
+  }
+
+  showPayoutMsg("Submitting…", "info");
+  const result = await API.requestPayout({ amount, method, paymentDetails: details });
+
+  if (!result.ok) {
+    showPayoutMsg("Error: " + result.error, "error");
+    return;
+  }
+
+  showPayoutMsg("✓ Payout request submitted! Admin will review it within 1-3 business days.", "success");
+  document.getElementById("payout-amount").value  = "";
+  document.getElementById("payout-details").value = "";
+  await loadMyPayouts();
+}
+
+// ── Load payout history ──────────────────────────────────────
+const STATUS_BADGE = {
+  pending:   "<span class=\"badge buyer\">pending</span>",
+  approved:  "<span class=\"badge active\">approved</span>",
+  rejected:  "<span class=\"badge danger\">rejected</span>",
+  paid:      "<span class=\"badge completed\">paid ✓</span>",
+  cancelled: "<span class=\"badge\">cancelled</span>",
+};
+
+async function loadMyPayouts() {
+  const tbody = document.getElementById("payout-history-body");
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:1.5rem">Loading…</td></tr>`;
+
+  const payouts = await API.getMyPayouts();
+
+  if (!payouts.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">No payout requests yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = payouts.map(p => {
+    const date   = (p.requested_at || "").slice(0,10);
+    const badge  = STATUS_BADGE[p.status] || p.status;
+    const cancel = p.status === "pending"
+      ? `<button class="tbl-btn danger" onclick="cancelMyPayout('${p.id}')">Cancel</button>`
+      : "";
+    return `<tr>
+      <td style="color:var(--text-muted);font-size:0.8rem">${date}</td>
+      <td style="font-weight:700;color:var(--green)">$${parseFloat(p.amount).toFixed(2)}</td>
+      <td>${p.method || "—"}</td>
+      <td style="font-size:0.78rem;color:var(--text-secondary);max-width:140px;overflow:hidden;text-overflow:ellipsis">${p.payment_details || "—"}</td>
+      <td>${badge}</td>
+      <td style="font-size:0.78rem;color:var(--text-muted)">${p.note || ""}</td>
+      <td>${cancel}</td>
+    </tr>`;
+  }).join("");
+}
+
+async function cancelMyPayout(id) {
+  if (!confirm("Cancel this payout request?")) return;
+  await API.cancelPayout(id);
+  await loadMyPayouts();
+}
+
+
+
+// ── Upload form ───────────────────────────────────────────────────────
+function handleCoverPreview(input) {
+  if (input.files?.[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => { const img=document.getElementById("cover-preview"); img.src=e.target.result; img.style.display="block"; };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+document.getElementById("upload-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn   = e.target.querySelector("button[type=submit]");
+  const title = document.getElementById("up-title").value.trim();
+  if (!title) { alert("Please enter a beat title."); return; }
+
+  const coverFile = document.getElementById("up-cover").files?.[0] || null;
+  const audioFile = document.getElementById("up-audio").files?.[0] || null;
+
+  // Require audio file
+  if (!audioFile) {
+    alert("Please select an audio file (MP3 or WAV) before submitting.");
+    document.getElementById("up-audio").focus();
+    return;
+  }
+
+  btn.disabled = true;
+
+  const steps = [
+    coverFile ? "Uploading cover art…" : null,
+    "Uploading audio file…",
+    "Saving beat…",
+  ].filter(Boolean);
+  let stepIdx = 0;
+  const stepInterval = setInterval(() => {
+    btn.textContent = steps[stepIdx % steps.length];
+    stepIdx++;
+  }, 1800);
+
+  try {
+    const beatData = {
+      title,
+      genre:       document.getElementById("up-genre").value,
+      bpm:         parseInt(document.getElementById("up-bpm").value) || null,
+      key:         document.getElementById("up-key").value,
+      price:       parseFloat(document.getElementById("up-price").value) || 29.99,
+      description: document.getElementById("up-desc").value.trim(),
+      tags:        document.getElementById("up-tags").value.split(",").map(t=>t.trim()).filter(Boolean),
+      coverFile,
+      audioFile,
+    };
+
+    const result = await API.uploadBeat(beatData);
+
+    if (result.ok) {
+      document.getElementById("upload-success").style.display = "block";
+      e.target.reset();
+      document.getElementById("cover-preview").style.display = "none";
+      await loadMyBeats();
+      setTimeout(() => { document.getElementById("upload-success").style.display="none"; showSection("beats"); }, 2500);
+    } else {
+      alert("Upload failed: " + (result.error || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert("Upload error: " + err.message);
+  } finally {
+    clearInterval(stepInterval);
+    btn.disabled = false;
+    btn.textContent = "🚀 Submit Beat for Review";
+  }
+});
+
+// ── Settings form ─────────────────────────────────────────────────────
+if (session) {
+  document.getElementById("set-name").value   = session.name   || "";
+  document.getElementById("set-handle").value = session.handle || "";
+  document.getElementById("set-email").value  = session.email  || "";
+}
+
+document.getElementById("settings-save-btn").addEventListener("click", async (e) => {
+  e.preventDefault();
+  if (API.isReady()) {
+    const { error } = await supabase.from("profiles").update({
+      name:   document.getElementById("set-name").value.trim(),
+      handle: document.getElementById("set-handle").value.trim(),
+      genre:  document.getElementById("set-genre").value,
+      bio:    document.getElementById("set-bio").value.trim(),
+    }).eq("id", session.id);
+    if (error) { alert("Error saving: " + error.message); return; }
+  }
+  // Update local session display name
+  document.getElementById("sidebar-name").textContent = document.getElementById("set-name").value.trim();
+  document.getElementById("settings-save-btn").textContent = "✓ Saved!";
+  setTimeout(() => { document.getElementById("settings-save-btn").textContent = "Save Changes"; }, 2000);
+});
+
+document.getElementById("password-save-btn").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const inputs = document.querySelectorAll("#section-settings input[type=password]");
+  const newPw = inputs[1]?.value?.trim();
+  if (!newPw || newPw.length < 8) { alert("New password must be at least 8 characters."); return; }
+  if (!API.isReady()) { alert("Password update requires Supabase connection."); return; }
+  const { error } = await supabase.auth.updateUser({ password: newPw });
+  if (error) { alert("Error: " + error.message); return; }
+  inputs[0].value = ""; inputs[1].value = "";
+  document.getElementById("password-save-btn").textContent = "✓ Password Updated!";
+  setTimeout(() => { document.getElementById("password-save-btn").textContent = "Update Password"; }, 2500);
+});
+
+// ── Init ──────────────────────────────────────────────────────────────
+(async () => {
+  showSection("overview");
+  await Promise.all([loadMyBeats(), loadOrders(), loadStats()]);
+})();
+</script>
+</body>
+</html>

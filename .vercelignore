@@ -1,0 +1,13 @@
+# Don't deploy backend/server files
+supabase/
+greeting_app/
+node_modules/
+.env
+.env.*
+*.sql
+*.ts
+
+# Dev files
+package.json
+package-lock.json
+README.md

@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — BeatMarket</title>
+  <meta name="description" content="Sign in or create your BeatMarket account.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0f;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── LEFT BRAND PANEL ──────────────────────────────── */
+    .brand-panel {
+      width: 44%;
+      min-height: 100vh;
+      background: linear-gradient(145deg, #0f0720 0%, #1a0a35 40%, #12062b 100%);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2.5rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 30% 40%, rgba(124,58,237,0.28) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(99,102,241,0.18) 0%, transparent 70%);
+    }
+
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .brand-top, .brand-mid, .brand-bot { position: relative; z-index: 1; }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #7C3AED, #6366F1);
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 1.3rem;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.5);
+    }
+    .brand-logo span { color: #a78bfa; }
+
+    .brand-mid { text-align: left; padding: 0 0.5rem; }
+
+    .brand-headline {
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      color: #fff;
+      margin-bottom: 1.1rem;
+    }
+    .brand-headline em {
+      font-style: normal;
+      background: linear-gradient(90deg, #a78bfa, #818cf8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.7;
+      max-width: 320px;
+      margin-bottom: 2.5rem;
+    }
+
+    .brand-stats {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
+    }
+    .brand-stat { display: flex; flex-direction: column; gap: 0.2rem; }
+    .brand-stat-val {
+      font-size: 1.5rem; font-weight: 800; color: #a78bfa;
+      line-height: 1;
+    }
+    .brand-stat-lbl { font-size: 0.72rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .brand-features { display: flex; flex-direction: column; gap: 0.85rem; }
+    .brand-feature {
+      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 0.85rem; color: rgba(255,255,255,0.65);
+    }
+    .brand-feature-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.3);
+      display: grid; place-items: center; font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .brand-bot {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.75rem; color: rgba(255,255,255,0.3);
+    }
+    .brand-bot a { color: rgba(255,255,255,0.45); text-decoration: none; }
+    .brand-bot a:hover { color: #a78bfa; }
+    .brand-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+
+    /* ── RIGHT FORM PANEL ──────────────────────────────── */
+    .form-panel {
+      flex: 1;
+      min-height: 100vh;
+      background: #0d0d14;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      overflow-y: auto;
+    }
+
+    .form-inner { width: 100%; max-width: 420px; }
+
+    .form-back {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.8rem; color: rgba(255,255,255,0.35);
+      text-decoration: none; margin-bottom: 2.5rem;
+      transition: color 0.2s;
+    }
+    .form-back:hover { color: #a78bfa; }
+    .form-back svg { width: 14px; height: 14px; }
+
+    /* Role pills */
+    .role-pills {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .role-pill {
+      flex: 1; padding: 0.55rem 0;
+      background: transparent; border: none; cursor: pointer;
+      border-radius: 9px;
+      font-size: 0.8rem; font-weight: 500;
+      color: rgba(255,255,255,0.4);
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .role-pill.active {
+      background: linear-gradient(135deg, rgba(124,58,237,0.5), rgba(99,102,241,0.4));
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(124,58,237,0.3);
+    }
+    .role-pill:hover:not(.active) { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.05); }
+
+    /* Panel */
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex;
+      margin-bottom: 2rem;
+      border-bottom: 1.5px solid rgba(255,255,255,0.08);
+    }
+    .mode-btn {
+      flex: 1; background: none; border: none; cursor: pointer;
+      padding: 0.6rem 0; font-size: 0.85rem; font-weight: 500;
+      color: rgba(255,255,255,0.35);
+      border-bottom: 2px solid transparent; margin-bottom: -1.5px;
+      transition: all 0.2s;
+    }
+    .mode-btn.active { color: #a78bfa; border-bottom-color: #7C3AED; }
+
+    /* Form heading */
+    .form-heading { margin-bottom: 1.75rem; }
+    .form-heading h2 {
+      font-size: 1.55rem; font-weight: 700; color: #fff;
+      letter-spacing: -0.4px; margin-bottom: 0.3rem;
+    }
+    .form-heading p { font-size: 0.85rem; color: rgba(255,255,255,0.4); }
+
+    /* Admin shield */
+    .admin-shield-wrap {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.75rem;
+      padding: 1rem 1.2rem;
+      background: rgba(217,119,6,0.08);
+      border: 1px solid rgba(217,119,6,0.2);
+      border-radius: 12px;
+    }
+    .admin-shield-icon { font-size: 2rem; }
+    .admin-shield-wrap h2 { font-size: 1.1rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.15rem; }
+    .admin-shield-wrap p { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
+
+    /* Input groups */
+    .fgroup { margin-bottom: 1.1rem; }
+    .fgroup label {
+      display: block; font-size: 0.78rem; font-weight: 500;
+      color: rgba(255,255,255,0.55); margin-bottom: 0.45rem; letter-spacing: 0.02em;
+    }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      font-size: 0.9rem; pointer-events: none; opacity: 0.5;
+    }
+    .input-wrap input, .input-wrap select {
+      width: 100%;
+      padding: 0.7rem 1rem 0.7rem 2.6rem;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(255,255,255,0.09);
+      border-radius: 10px;
+      color: #fff;
+      font-family: inherit; font-size: 0.88rem;
+      transition: border-color 0.2s, background 0.2s;
+      outline: none;
+    }
+    .input-wrap input::placeholder { color: rgba(255,255,255,0.2); }
+    .input-wrap input:focus, .input-wrap select:focus {
+      border-color: rgba(124,58,237,0.6);
+      background: rgba(124,58,237,0.06);
+    }
+    .input-wrap select { appearance: none; cursor: pointer; }
+    .pw-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      font-size: 0.85rem; opacity: 0.4; padding: 2px;
+      transition: opacity 0.2s;
+    }
+    .pw-toggle:hover { opacity: 0.8; }
+
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+    .form-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.4rem;
+    }
+    .check-label {
+      display: flex; align-items: center; gap: 0.45rem;
+      font-size: 0.78rem; color: rgba(255,255,255,0.4); cursor: pointer;
+    }
+    .check-label input[type="checkbox"] { accent-color: #7C3AED; width: 14px; height: 14px; }
+    .forgot-link { font-size: 0.78rem; color: #a78bfa; text-decoration: none; }
+    .forgot-link:hover { text-decoration: underline; }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%;
+      padding: 0.8rem;
+      border: none; cursor: pointer;
+      border-radius: 10px;
+      font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      transition: all 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .btn-submit.buyer {
+      background: linear-gradient(135deg, #7C3AED, #6366F1);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+    .btn-submit.buyer:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(124,58,237,0.55); }
+    .btn-submit.seller {
+      background: linear-gradient(135deg, #059669, #10B981);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(16,185,129,0.35);
+    }
+    .btn-submit.seller:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(16,185,129,0.5); }
+    .btn-submit.admin {
+      background: linear-gradient(135deg, #D97706, #F59E0B);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(217,119,6,0.35);
+    }
+    .btn-submit.admin:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(217,119,6,0.5); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 0.8rem;
+      margin: 1.2rem 0; color: rgba(255,255,255,0.2); font-size: 0.75rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.07);
+    }
+
+    /* Social buttons */
+    .social-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1.4rem; }
+    .btn-social {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.62rem 0.5rem;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 9px; cursor: pointer;
+      font-family: inherit; font-size: 0.78rem; font-weight: 500; color: rgba(255,255,255,0.6);
+      transition: all 0.2s;
+    }
+    .btn-social:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); color: #fff; }
+
+    /* Error */
+    .auth-error {
+      display: none; background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px; padding: 0.6rem 0.85rem;
+      font-size: 0.8rem; color: #fca5a5;
+      margin-bottom: 1rem;
+    }
+    .auth-error.visible { display: block; }
+
+    /* Terms / hint */
+    .auth-terms {
+      font-size: 0.73rem; color: rgba(255,255,255,0.3);
+      text-align: center; margin-top: 1rem;
+    }
+    .auth-terms a { color: rgba(255,255,255,0.45); text-decoration: underline; }
+    .demo-hint {
+      margin-top: 1.2rem;
+      padding: 0.6rem 0.9rem;
+      background: rgba(99,102,241,0.08);
+      border: 1px dashed rgba(99,102,241,0.25);
+      border-radius: 8px;
+      font-size: 0.75rem; color: rgba(255,255,255,0.4);
+    }
+    .demo-hint strong { color: rgba(99,102,241,0.8); }
+
+    /* Responsive */
+    @media (max-width: 760px) {
+      .brand-panel { display: none; }
+      .form-panel { padding: 1.5rem 1.2rem; justify-content: flex-start; padding-top: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LEFT BRAND PANEL ───────────────────────────────────── -->
+<div class="brand-panel" aria-hidden="true">
+  <div class="brand-top">
+    <a href="index.html" class="brand-logo">
+      <div class="brand-logo-icon">🎧</div>
+      Beat<span>Market</span>
+    </a>
+  </div>
+
+  <div class="brand-mid">
+    <h1 class="brand-headline">
+      The marketplace<br>where <em>hits</em><br>are born.
+    </h1>
+    <p class="brand-sub">
+      Join over 210,000 artists who discover, license, and sell premium beats every day.
+    </p>
+    <div class="brand-stats">
+      <div class="brand-stat">
+        <span class="brand-stat-val">42K+</span>
+        <span class="brand-stat-lbl">Beats</span>
+      </div>
+      <div class="brand-stat">
+        <span class="brand-stat-val">8.5K</span>
+        <span class="brand-stat-lbl">Producers</span>
+      </div>
+      <div class="brand-stat">
+        <span class="brand-stat-val">210K</span>
+        <span class="brand-stat-lbl">Artists</span>
+      </div>
+    </div>
+    <div class="brand-features">
+      <div class="brand-feature"><span class="brand-feature-icon">🎵</span>Instant MP3, WAV & Unlimited licenses</div>
+      <div class="brand-feature"><span class="brand-feature-icon">💳</span>Secure Stripe-powered checkout</div>
+      <div class="brand-feature"><span class="brand-feature-icon">🛡️</span>100% rights-protected &amp; trackable</div>
+      <div class="brand-feature"><span class="brand-feature-icon">🚀</span>Sell your beats, keep 80% revenue</div>
+    </div>
+  </div>
+
+  <div class="brand-bot">
+    <span>© 2026 BeatMarket</span>
+    <span class="brand-dot"></span>
+    <a href="#">Privacy</a>
+    <span class="brand-dot"></span>
+    <a href="#">Terms</a>
+  </div>
+</div>
+
+<!-- ── RIGHT FORM PANEL ───────────────────────────────────── -->
+<div class="form-panel">
+  <div class="form-inner">
+
+    <a href="index.html" class="form-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to BeatMarket
+    </a>
+
+    <!-- Role selector -->
+    <div class="role-pills" role="tablist">
+      <button class="role-pill active" data-tab="buyer" role="tab" aria-selected="true">🎵 Buyer</button>
+      <button class="role-pill" data-tab="seller" role="tab" aria-selected="false">🎤 Seller</button>
+    </div>
+
+    <!-- ── BUYER PANEL ── -->
+    <div class="auth-panel active" id="panel-buyer">
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="login">Sign In</button>
+        <button class="mode-btn" data-mode="register">Create Account</button>
+      </div>
+
+      <!-- Login -->
+      <form class="auth-form" id="buyer-login-form" data-mode="login" novalidate>
+        <div class="form-heading">
+          <h2>Welcome back</h2>
+          <p>Sign in to your buyer account to continue</p>
+        </div>
+        <div class="social-row">
+          <button type="button" class="btn-social" id="social-google-buyer">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Google
+          </button>
+          <button type="button" class="btn-social" id="social-apple-buyer">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            Apple
+          </button>
+        </div>
+        <div class="divider">or sign in with email</div>
+        <div class="fgroup">
+          <label for="buyer-login-email">Email address</label>
+          <div class="input-wrap"><span class="input-icon">✉️</span><input type="email" id="buyer-login-email" placeholder="you@email.com" autocomplete="email" required></div>
+        </div>
+        <div class="fgroup">
+          <label for="buyer-login-pw">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="buyer-login-pw" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" data-target="buyer-login-pw">👁</button>
+          </div>
+        </div>
+        <div class="form-footer">
+          <label class="check-label"><input type="checkbox" id="buyer-remember"> Remember me</label>
+          <a href="#" class="forgot-link" onclick="sendPasswordReset('buyer'); return false;">Forgot password?</a>
+        </div>
+        <div class="auth-error" id="buyer-login-error" role="alert"></div>
+        <button type="submit" class="btn-submit buyer">Sign In</button>
+
+      </form>
+
+      <!-- Register -->
+      <form class="auth-form" id="buyer-register-form" data-mode="register" style="display:none" novalidate>
+        <div class="form-heading">
+          <h2>Create your account</h2>
+          <p>Join thousands of artists on BeatMarket</p>
+        </div>
+        <div class="fgroup">
+          <label for="buyer-reg-name">Full name</label>
+          <div class="input-wrap"><span class="input-icon">👤</span><input type="text" id="buyer-reg-name" placeholder="Your name" autocomplete="name" required></div>
+        </div>
+        <div class="fgroup">
+          <label for="buyer-reg-email">Email address</label>
+          <div class="input-wrap"><span class="input-icon">✉️</span><input type="email" id="buyer-reg-email" placeholder="you@email.com" autocomplete="email" required></div>
+        </div>
+        <div class="fgroup">
+          <label for="buyer-reg-pw">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="buyer-reg-pw" placeholder="Min 6 characters" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" data-target="buyer-reg-pw">👁</button>
+          </div>
+        </div>
+        <div class="auth-error" id="buyer-reg-error" role="alert"></div>
+        <button type="submit" class="btn-submit buyer">Create Account</button>
+        <p class="auth-terms">By signing up you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+      </form>
+    </div>
+
+    <!-- ── SELLER PANEL ── -->
+    <div class="auth-panel" id="panel-seller">
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="login">Sign In</button>
+        <button class="mode-btn" data-mode="register">Become a Seller</button>
+      </div>
+
+      <form class="auth-form" id="seller-login-form" data-mode="login" novalidate>
+        <div class="form-heading">
+          <h2>Seller Portal</h2>
+          <p>Sign in to your producer dashboard</p>
+        </div>
+        <div class="social-row">
+          <button type="button" class="btn-social" id="social-google-seller">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Google
+          </button>
+          <button type="button" class="btn-social" id="social-apple-seller">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            Apple
+          </button>
+        </div>
+        <div class="divider">or sign in with email</div>
+        <div class="fgroup">
+          <label for="seller-login-email">Email address</label>
+          <div class="input-wrap"><span class="input-icon">✉️</span><input type="email" id="seller-login-email" placeholder="producer@email.com" autocomplete="email" required></div>
+        </div>
+        <div class="fgroup">
+          <label for="seller-login-pw">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="seller-login-pw" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" data-target="seller-login-pw">👁</button>
+          </div>
+        </div>
+        <div class="auth-error" id="seller-login-error" role="alert"></div>
+        <button type="submit" class="btn-submit seller">Sign In to Dashboard</button>
+
+      </form>
+
+      <form class="auth-form" id="seller-register-form" data-mode="register" style="display:none" novalidate>
+        <div class="form-heading">
+          <h2>Become a Seller</h2>
+          <p>Start selling your beats to thousands of artists</p>
+        </div>
+        <div class="form-row-2">
+          <div class="fgroup">
+            <label for="seller-reg-name">Producer name</label>
+            <div class="input-wrap"><span class="input-icon">🎤</span><input type="text" id="seller-reg-name" placeholder="Stage name" required></div>
+          </div>
+          <div class="fgroup">
+            <label for="seller-reg-genre">Main genre</label>
+            <div class="input-wrap">
+              <span class="input-icon">🎵</span>
+              <select id="seller-reg-genre">
+                <option>Trap</option><option>Drill</option><option>Lo-Fi</option>
+                <option>R&amp;B</option><option>Afrobeats</option><option>Rage</option><option>Pop</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="fgroup">
+          <label for="seller-reg-email">Email address</label>
+          <div class="input-wrap"><span class="input-icon">✉️</span><input type="email" id="seller-reg-email" placeholder="producer@email.com" required></div>
+        </div>
+        <div class="fgroup">
+          <label for="seller-reg-pw">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="seller-reg-pw" placeholder="Min 6 characters" required>
+            <button type="button" class="pw-toggle" data-target="seller-reg-pw">👁</button>
+          </div>
+        </div>
+        <div class="auth-error" id="seller-reg-error" role="alert"></div>
+        <button type="submit" class="btn-submit seller">Apply as Seller</button>
+        <p class="auth-terms">By signing up you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+      </form>
+    </div>
+
+    <!-- Admin portal link -->
+    <div style="text-align:center;margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.06)">
+      <a href="admin-login.html" style="font-size:0.75rem;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='rgba(251,191,36,0.6)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">
+        🔒 Admin Portal
+      </a>
+    </div>
+
+  </div><!-- /form-inner -->
+</div><!-- /form-panel -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+(function () {
+  // Redirect if already logged in
+  const session = Auth.getSession();
+  if (session) {
+    if (session.role === "admin")       window.location.href = "admin.html";
+    else if (session.role === "seller") window.location.href = "seller.html";
+    else window.location.href = "buyer.html";
+    return;
+  }
+
+  // Role pill switching
+  document.querySelectorAll(".role-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      document.querySelectorAll(".role-pill").forEach((p) => { p.classList.remove("active"); p.setAttribute("aria-selected","false"); });
+      document.querySelectorAll(".auth-panel").forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+      pill.setAttribute("aria-selected","true");
+      document.getElementById("panel-" + pill.dataset.tab).classList.add("active");
+    });
+  });
+
+  // Mode toggle (Sign In / Register)
+  document.querySelectorAll(".auth-panel").forEach((panel) => {
+    const btns  = panel.querySelectorAll(".mode-btn");
+    const forms = panel.querySelectorAll(".auth-form");
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btns.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const mode = btn.dataset.mode;
+        forms.forEach((f) => {
+          f.style.display = f.dataset.mode === mode ? "block" : "none";
+        });
+      });
+    });
+  });
+
+  // Password visibility
+  document.querySelectorAll(".pw-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.target);
+      input.type = input.type === "password" ? "text" : "password";
+      btn.textContent = input.type === "password" ? "👁" : "🙈";
+    });
+  });
+
+  // Error helper
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.classList.add("visible");
+    setTimeout(() => el.classList.remove("visible"), 5000);
+  }
+
+  function setLoading(btn, loading) {
+    btn.disabled = loading;
+    btn.dataset.orig = btn.dataset.orig || btn.textContent;
+    btn.textContent = loading ? "Please wait…" : btn.dataset.orig;
+  }
+
+  // ── BUYER LOGIN ───────────────────────────────────────
+  document.getElementById("buyer-login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email  = document.getElementById("buyer-login-email").value.trim().toLowerCase();
+    const locked = RateLimit.check("buyer_login");
+    if (locked) { showError("buyer-login-error", locked); return; }
+    const btn = e.target.querySelector("[type=submit]");
+    setLoading(btn, true);
+    const res = await Auth.login(email, document.getElementById("buyer-login-pw").value, "buyer");
+    setLoading(btn, false);
+    if (!res.ok) {
+      const warn = RateLimit.record("buyer_login", false);
+      showError("buyer-login-error", (warn ? warn + " " : "") + res.error);
+      return;
+    }
+    RateLimit.record("buyer_login", true);
+    window.location.href = "buyer.html";
+  });
+
+  // ── Success toast helper ──────────────────────────────
+  function showSuccess(msg, then) {
+    // Insert a toast at top of form-inner
+    const existing = document.getElementById("signup-toast");
+    if (existing) existing.remove();
+    const toast = document.createElement("div");
+    toast.id = "signup-toast";
+    toast.style.cssText = `
+      position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);
+      background:linear-gradient(135deg,#059669,#10B981);
+      color:#fff;padding:0.75rem 1.5rem;border-radius:10px;
+      font-size:0.85rem;font-weight:600;z-index:9999;
+      box-shadow:0 4px 20px rgba(16,185,129,0.4);
+      display:flex;align-items:center;gap:0.5rem;
+      animation:slideDown 0.3s ease;
+    `;
+    toast.innerHTML = `<span>✅</span>${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.remove(); then && then(); }, 2200);
+  }
+
+  function switchToSignIn(panelId) {
+    const panel = document.getElementById(panelId);
+    const btns  = panel.querySelectorAll(".mode-btn");
+    const forms = panel.querySelectorAll(".auth-form");
+    btns.forEach(b => { b.classList.remove("active"); if (b.dataset.mode === "login") b.classList.add("active"); });
+    forms.forEach(f => { f.style.display = f.dataset.mode === "login" ? "block" : "none"; });
+  }
+
+  // ── BUYER REGISTER ────────────────────────────────────
+  document.getElementById("buyer-register-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector("[type=submit]");
+    const pw  = document.getElementById("buyer-reg-pw").value;
+    if (pw.length < 6) { showError("buyer-reg-error", "Password must be at least 6 characters."); return; }
+    setLoading(btn, true);
+    const res = await Auth.register({
+      role: "buyer",
+      name:  document.getElementById("buyer-reg-name").value,
+      email: document.getElementById("buyer-reg-email").value,
+      password: pw,
+    });
+    setLoading(btn, false);
+    if (!res.ok) { showError("buyer-reg-error", res.error); return; }
+    showSuccess("Account created! Please sign in.", () => switchToSignIn("panel-buyer"));
+  });
+
+  // ── SELLER LOGIN ──────────────────────────────────────
+  document.getElementById("seller-login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("seller-login-email").value.trim().toLowerCase();
+    const locked = RateLimit.check("seller_login");
+    if (locked) { showError("seller-login-error", locked); return; }
+    const btn = e.target.querySelector("[type=submit]");
+    setLoading(btn, true);
+    const res = await Auth.login(email, document.getElementById("seller-login-pw").value, "seller");
+    setLoading(btn, false);
+    if (!res.ok) {
+      const warn = RateLimit.record("seller_login", false);
+      showError("seller-login-error", (warn ? warn + " " : "") + res.error);
+      return;
+    }
+    RateLimit.record("seller_login", true);
+    window.location.href = "seller.html";
+  });
+
+  // ── SELLER REGISTER ───────────────────────────────────
+  document.getElementById("seller-register-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector("[type=submit]");
+    const pw  = document.getElementById("seller-reg-pw").value;
+    if (pw.length < 6) { showError("seller-reg-error", "Password must be at least 6 characters."); return; }
+    setLoading(btn, true);
+    const res = await Auth.register({
+      role: "seller",
+      name:  document.getElementById("seller-reg-name").value,
+      email: document.getElementById("seller-reg-email").value,
+      password: pw,
+      genre: document.getElementById("seller-reg-genre").value,
+    });
+    setLoading(btn, false);
+    if (!res.ok) { showError("seller-reg-error", res.error); return; }
+    showSuccess("Application submitted! Please sign in.", () => switchToSignIn("panel-seller"));
+  });
+
+  // ── SOCIAL / OAUTH LOGIN ──────────────────────────────
+  function getRedirectUrl() {
+    // Use current origin if on HTTP (local server or production)
+    // Falls back to the server URL for file:// contexts
+    if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+      return window.location.origin + "/oauth-callback.html";
+    }
+    // Fallback for file:// — use local server if running
+    return "http://192.168.1.93:8080/oauth-callback.html";
+  }
+
+  async function signInWithProvider(provider) {
+    if (!window._supabaseReady) {
+      alert("Supabase is not configured. Please set up your project first.");
+      return;
+    }
+    const btn = document.getElementById("social-" + provider + "-buyer") ||
+                document.getElementById("social-" + provider + "-seller");
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: getRedirectUrl(),
+        queryParams: provider === "google" ? { access_type: "offline", prompt: "consent" } : {},
+      },
+    });
+
+    if (error) {
+      alert("OAuth error: " + error.message);
+      if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+    }
+    // On success, browser redirects to provider — nothing more to do here
+  }
+
+  // Wire all social buttons (buyer + seller panels)
+  document.getElementById("social-google-buyer").addEventListener("click",  () => signInWithProvider("google"));
+  document.getElementById("social-apple-buyer").addEventListener("click",   () => signInWithProvider("apple"));
+  document.getElementById("social-google-seller").addEventListener("click", () => signInWithProvider("google"));
+  document.getElementById("social-apple-seller").addEventListener("click",  () => signInWithProvider("apple"));
+
+  // ── FORGOT PASSWORD ──────────────────────────────────
+  window.sendPasswordReset = async function(panel) {
+    const emailInput = panel === 'buyer'
+      ? document.getElementById('buyer-login-email')
+      : document.getElementById('seller-login-email');
+    const email = (emailInput?.value || '').trim().toLowerCase();
+    if (!email) {
+      showError(panel + '-login-error', 'Enter your email address first, then click Forgot password.');
+      return;
+    }
+    if (!window._supabaseReady) {
+      showError(panel + '-login-error', 'Supabase not configured. Password reset requires a live backend.');
+      return;
+    }
+    const redirectUrl = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+      ? window.location.origin + '/reset-password.html'
+      : 'http://192.168.1.93:8080/reset-password.html';
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    });
+    if (error) {
+      showError(panel + '-login-error', error.message);
+    } else {
+      showSuccess('📧 Password reset email sent to ' + email + '. Check your inbox!');
+    }
+  };
+})();
+
+</script>
+</body>
+</html>

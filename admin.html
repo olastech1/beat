@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — BeatMarket</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <style>
+    /* ── Critical mobile overrides (inline = cache-proof) ── */
+    @media (max-width: 900px) {
+      .hide-mobile { display: none !important; }
+      .dash-main { margin-left: 0 !important; }
+      .dash-sidebar { transform: translateX(-100%); }
+      .dash-sidebar.open { transform: translateX(0); box-shadow: 4px 0 40px rgba(0,0,0,.6); }
+      .dash-menu-btn { display: flex !important; }
+      .dash-topbar { padding: 0 0.85rem !important; gap: 0.5rem !important; }
+      .dash-page-title { font-size: 0.85rem !important; max-width: 38vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .dash-content { padding: 1.25rem 1rem !important; }
+      .stat-cards { grid-template-columns: 1fr 1fr !important; gap: 0.75rem !important; }
+
+      /* KEY FIX: remove overflow:hidden so inner scroll works */
+      .dash-section { overflow: visible !important; }
+      .dash-section > [style*="overflow-x"],
+      .dash-section-body > [style*="overflow-x"],
+      [style*="overflow-x:auto"] {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-width: 100%;
+      }
+      .data-table { min-width: 480px; }
+      .chart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .chart-svg  { min-width: 320px; }
+      .dash-section-header { flex-wrap: wrap; gap: 0.5rem !important; }
+      .table-search { width: 100% !important; }
+      #payout-filter-tabs { flex-wrap: wrap !important; gap: 0.4rem !important; }
+      #payout-filter-tabs button { margin-left: 0 !important; }
+      .payout-grid { grid-template-columns: 1fr !important; }
+      .upload-form .form-grid, .form-row { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 550px) {
+      .stat-card { padding: 1rem 0.75rem !important; }
+      .stat-value { font-size: 1.4rem !important; }
+      .dash-topbar-right .btn-primary .btn-label { display: none !important; }
+      .dash-topbar-right .btn-primary::before { content: attr(data-icon); font-size: 1rem; }
+      .dash-topbar-right .btn-primary { padding: 0.45rem 0.7rem !important; }
+
+      /* Bigger tap targets */
+      .tbl-btn { font-size: 0.72rem !important; padding: 0.38rem 0.6rem !important; min-height: 36px; }
+      .tbl-btn-group { flex-direction: column !important; gap: 4px !important; align-items: stretch; }
+      .tbl-btn-group .tbl-btn { text-align: center; }
+      .beat-thumb { width: 32px !important; height: 32px !important; }
+
+      /* Hide less-critical columns on tiny screens */
+      #admin-beats-table th:nth-child(5), #admin-beats-table td:nth-child(5),
+      #admin-beats-table th:nth-child(7), #admin-beats-table td:nth-child(7) { display: none !important; }
+
+      /* Section header buttons wrap nicely */
+      .dash-section-header > div { flex-wrap: wrap !important; }
+      .dash-section-header > div input[type=search] { width: 100% !important; }
+    }
+  </style>
+</head>
+<body class="dash-body">
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="dash-sidebar" id="dash-sidebar">
+  <a href="index.html" class="dash-sidebar-logo">
+    <div class="dash-sidebar-logo-icon">🎧</div>
+    Beat<span>Market</span>
+  </a>
+
+  <div class="dash-user-info">
+    <div class="dash-avatar" id="sidebar-avatar" style="background:linear-gradient(135deg,#D97706,#EA580C)">AD</div>
+    <div>
+      <div class="dash-user-name" id="sidebar-name">Admin</div>
+      <span class="dash-role-badge badge admin">Admin</span>
+    </div>
+  </div>
+
+  <nav class="dash-nav" aria-label="Admin navigation">
+    <div class="dash-nav-section">Dashboard</div>
+    <a class="dash-nav-link active" href="#" data-section="overview"  onclick="showSection('overview');return false">📊 <span class="nav-lbl">Overview</span></a>
+    <a class="dash-nav-link"        href="#" data-section="users"     onclick="showSection('users');return false">👥 <span class="nav-lbl">Users</span> <span class="dash-nav-badge" id="badge-users">3</span></a>
+    <a class="dash-nav-link"        href="#" data-section="beats"     onclick="showSection('beats');return false">🎵 <span class="nav-lbl">Beats</span></a>
+    <a class="dash-nav-link"        href="#" data-section="orders"    onclick="showSection('orders');return false">🛒 <span class="nav-lbl">Orders</span></a>
+    <div class="dash-nav-section" style="margin-top:1rem">Moderation</div>
+    <a class="dash-nav-link"        href="#" data-section="moderation" onclick="showSection('moderation');return false">🔍 <span class="nav-lbl">Beat Review</span> <span class="dash-nav-badge">4</span></a>
+    <a class="dash-nav-link"        href="#" data-section="payouts"    onclick="showSection('payouts');return false">💸 <span class="nav-lbl">Payouts</span> <span class="dash-nav-badge" id="badge-payouts" style="display:none">0</span></a>
+    <a class="dash-nav-link"        href="#" data-section="reports"   onclick="showSection('reports');return false">📈 <span class="nav-lbl">Reports</span></a>
+    <div class="dash-nav-section" style="margin-top:1rem">System</div>
+    <a class="dash-nav-link"        href="#" data-section="pages"     onclick="showSection('pages');return false">📝 <span class="nav-lbl">Pages</span></a>
+    <a class="dash-nav-link"        href="#" data-section="settings"  onclick="showSection('settings');return false">⚙️ <span class="nav-lbl">Settings</span></a>
+    <a href="index.html" class="dash-nav-link">🏠 <span class="nav-lbl">View Store</span></a>
+  </nav>
+
+  <div class="dash-sidebar-footer">
+    <button class="btn-logout" id="logout-btn">🚪 <span>Log Out</span></button>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<main class="dash-main">
+  <div class="dash-topbar">
+    <button class="dash-menu-btn" id="dash-menu-btn">☰</button>
+    <div class="dash-page-title" id="dash-page-title">📊 Overview</div>
+    <div class="dash-topbar-right">
+      <span class="hide-mobile" style="font-size:0.75rem;color:var(--text-muted)">🕐 Last updated: just now</span>
+      <button class="btn-primary topbar-export-btn" style="font-size:0.78rem;padding:0.4rem 0.9rem;white-space:nowrap" onclick="alert('Exporting… (Demo)')">⬇ <span class="hide-mobile">Export CSV</span></button>
+    </div>
+  </div>
+
+  <div class="dash-content">
+
+    <!-- ── OVERVIEW ── -->
+    <section id="section-overview">
+      <div class="stat-cards">
+        <div class="stat-card purple"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value" id="st-revenue">$0</div><div class="stat-change" id="st-revenue-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card green"><div class="stat-icon">👥</div><div class="stat-label">Total Users</div><div class="stat-value" id="st-users">0</div><div class="stat-change" id="st-users-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card amber"><div class="stat-icon">🎵</div><div class="stat-label">Active Beats</div><div class="stat-value" id="st-beats">0</div><div class="stat-change" id="st-beats-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card red"><div class="stat-icon">⏳</div><div class="stat-label">Pending Review</div><div class="stat-value" id="st-pending">0</div><div class="stat-change" style="color:var(--text-muted)">Up to date</div></div>
+        <div class="stat-card blue"><div class="stat-icon">🛒</div><div class="stat-label">Orders Today</div><div class="stat-value" id="st-orders">0</div><div class="stat-change" id="st-orders-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card green"><div class="stat-icon">🎤</div><div class="stat-label">Sellers</div><div class="stat-value" id="st-sellers">0</div><div class="stat-change" id="st-sellers-change" style="color:var(--text-muted)">No data yet</div></div>
+      </div>
+
+      <!-- Revenue Chart -->
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">📈 Platform Revenue</span>
+          <div style="display:flex;gap:1rem;font-size:0.75rem;color:var(--text-muted)">
+            <span style="color:var(--purple-light)">■ Revenue</span>
+            <span style="color:var(--green)">■ Orders</span>
+          </div>
+        </div>
+        <div class="dash-section-body">
+          <svg id="admin-chart" class="chart-svg" viewBox="0 0 600 180" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+
+      <!-- Top Sellers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="dash-section">
+          <div class="dash-section-header"><span class="dash-section-title">🏆 Top Sellers</span></div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Producer</th><th>Beats</th><th>Revenue</th></tr></thead>
+              <tbody id="top-sellers-body">
+                <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:2rem">No sales data yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-header"><span class="dash-section-title">🔥 Top Genres</span></div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Genre</th><th>Beats</th><th>Sales</th></tr></thead>
+              <tbody id="top-genres-body">
+                <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:2rem">No sales data yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── USERS ── -->
+    <section id="section-users" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">👥 All Users</span>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <input type="search" class="table-search" id="user-search" placeholder="Search users…">
+            <select class="table-search" id="role-filter" style="width:auto">
+              <option value="">All Roles</option>
+              <option value="buyer">Buyer</option>
+              <option value="seller">Seller</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="users-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BEATS ── -->
+    <section id="section-beats" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">🎵 All Beats</span>
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <button class="tbl-btn success" onclick="reactivateAllBeats()" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);color:#10b981;font-size:0.78rem">✅ Reactivate All Inactive</button>
+            <input type="search" class="table-search" id="admin-beat-search" placeholder="Search beats…">
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="admin-beats-table">
+            <thead><tr>
+              <th>Cover</th><th>Title</th><th>Producer</th><th>Genre</th><th>BPM</th><th>Price</th><th>Plays</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="admin-beats-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ORDERS ── -->
+    <section id="section-orders" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">🛒 All Orders</span>
+          <input type="search" class="table-search" placeholder="Search orders…">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>#</th><th>Beat</th><th>Buyer</th><th>Seller</th><th>License</th><th>Amount</th><th>Date</th><th>Status</th>
+            </tr></thead>
+            <tbody id="admin-orders-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BEAT MODERATION ── -->
+    <section id="section-moderation" class="hidden">
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <span class="dash-section-title">🔍 Pending Beat Review</span>
+          <span class="badge pending">4 Pending</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>Beat</th><th>Producer</th><th>Genre</th><th>Submitted</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="moderation-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── REPORTS ── -->
+    <section id="section-reports" class="hidden">
+      <div class="stat-cards">
+        <div class="stat-card purple"><div class="stat-icon">📊</div><div class="stat-label">Monthly Revenue</div><div class="stat-value" id="rpt-revenue">$0</div><div class="stat-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card green"><div class="stat-icon">📦</div><div class="stat-label">Monthly Orders</div><div class="stat-value" id="rpt-orders">0</div><div class="stat-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card amber"><div class="stat-icon">👤</div><div class="stat-label">New Users</div><div class="stat-value" id="rpt-users">0</div><div class="stat-change" style="color:var(--text-muted)">No data yet</div></div>
+        <div class="stat-card blue"><div class="stat-icon">💳</div><div class="stat-label">Avg Order Value</div><div class="stat-value" id="rpt-avg">$0</div><div class="stat-change" style="color:var(--text-muted)">No data yet</div></div>
+      </div>
+      <div class="dash-section">
+        <div class="dash-section-header"><span class="dash-section-title">📈 Revenue Trend (12 months)</span></div>
+        <div class="dash-section-body">
+          <svg id="report-chart" class="chart-svg" style="height:220px" viewBox="0 0 700 220" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="dash-section">
+          <div class="dash-section-header"><span class="dash-section-title">💳 Revenue by License</span></div>
+          <div class="dash-section-body">
+            <svg id="license-report-chart" class="chart-svg" viewBox="0 0 400 180" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-header"><span class="dash-section-title">🎵 Sales by Genre</span></div>
+          <div class="dash-section-body">
+            <svg id="genre-chart" class="chart-svg" viewBox="0 0 400 180" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section id="section-settings" class="hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="dash-section">
+          <div class="dash-section-header"><span class="dash-section-title">🏪 Platform Settings</span></div>
+          <div class="dash-section-body">
+            <div class="upload-form">
+              <div class="form-group"><label>Platform Name</label><input type="text" value="BeatMarket"></div>
+              <div class="form-group"><label>Commission Rate (%)</label><input type="number" value="20" min="0" max="100"></div>
+              <div class="form-group"><label>Min Withdrawal ($)</label><input type="number" value="100" min="10"></div>
+              <div class="form-group"><label>Payout Delay (days)</label><input type="number" value="7" min="1"></div>
+              <button class="upload-btn" onclick="alert('Settings saved! (Demo)')">Save Platform Settings</button>
+            </div>
+          </div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-header"><span class="dash-section-title">🔒 Admin Account</span></div>
+          <div class="dash-section-body">
+            <div class="upload-form">
+              <div class="form-group"><label>Name</label><input type="text" id="admin-set-name" value="Admin User"></div>
+              <div class="form-group"><label>Email</label><input type="email" value="admin@beatmarket.com"></div>
+              <div class="form-group"><label>Current Password</label><input type="password" placeholder="••••••••"></div>
+              <div class="form-group"><label>New Password</label><input type="password" placeholder="••••••••"></div>
+              <button class="upload-btn" onclick="alert('Account updated! (Demo)')">Save Account</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stripe Integration -->
+      <div class="dash-section" style="margin-top:1rem;border:1.5px solid #4F46E520">
+        <div class="dash-section-header" style="background:linear-gradient(90deg,#4F46E510,transparent)">
+          <span class="dash-section-title">💳 Stripe Integration</span>
+          <span id="stripe-status-badge" class="badge" style="font-size:0.72rem"></span>
+        </div>
+        <div class="dash-section-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+            <!-- Publishable Key (frontend, saved to localStorage) -->
+            <div class="upload-form" style="grid-column:1/-1">
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--green)" id="stripe-indicator"></div>
+                <span style="font-size:0.8rem;color:var(--text-muted)">Keys are saved in the browser. The Secret key must also be set as a Supabase Edge Function secret.</span>
+              </div>
+
+              <div class="form-group">
+                <label>Publishable Key <span style="color:var(--text-muted);font-size:0.72rem">(pk_live_ or pk_test_) — used by browser</span></label>
+                <div style="position:relative">
+                  <input type="text" id="stripe-pk" placeholder="pk_test_…"
+                    style="font-family:monospace;font-size:0.8rem;padding-right:6rem"
+                    oninput="updateStripeIndicator()">
+                  <button class="tbl-btn primary" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:0.3rem 0.7rem;font-size:0.75rem"
+                    onclick="pasteKey('stripe-pk')">Paste</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Secret Key <span style="color:var(--text-muted);font-size:0.72rem">(sk_live_ or sk_test_) — saved locally + shown for Supabase CLI</span></label>
+                <div style="position:relative">
+                  <input type="password" id="stripe-sk" placeholder="sk_test_…"
+                    style="font-family:monospace;font-size:0.8rem;padding-right:6rem"
+                    oninput="updateStripeIndicator()">
+                  <button class="tbl-btn primary" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:0.3rem 0.7rem;font-size:0.75rem"
+                    onclick="toggleSkVisibility()">Show</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Webhook Secret <span style="color:var(--text-muted);font-size:0.72rem">(whsec_…) — from Stripe Dashboard → Webhooks</span></label>
+                <div style="position:relative">
+                  <input type="password" id="stripe-whsec" placeholder="whsec_…"
+                    style="font-family:monospace;font-size:0.8rem;padding-right:6rem"
+                    oninput="updateStripeIndicator()">
+                  <button class="tbl-btn primary" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:0.3rem 0.7rem;font-size:0.75rem"
+                    onclick="toggleWhsecVisibility()">Show</button>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+                <button class="upload-btn" style="padding:0.6rem 1.5rem" onclick="saveStripeKeys()">💾 Save Stripe Keys</button>
+                <button class="tbl-btn danger" style="padding:0.55rem 1rem" onclick="clearStripeKeys()">🗑 Clear Keys</button>
+                <a href="https://dashboard.stripe.com/apikeys" target="_blank" style="font-size:0.8rem;color:var(--purple-light);text-decoration:none">
+                  → Get keys from Stripe Dashboard ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- CLI instructions (read-only) -->
+            <div style="grid-column:1/-1;margin-top:0.5rem">
+              <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem">
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem">📋 Also run these in your terminal to activate the Edge Functions:</div>
+                <pre id="stripe-cli-block" style="font-family:monospace;font-size:0.75rem;color:#a78bfa;margin:0;white-space:pre-wrap;word-break:break-all"></pre>
+                <button class="tbl-btn primary" style="margin-top:0.5rem;padding:0.35rem 0.8rem;font-size:0.75rem" onclick="copyCliBlock()">📋 Copy Commands</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Social / OAuth Login Settings -->
+      <div class="dash-section" style="margin-top:1rem;border:1.5px solid rgba(16,185,129,0.15)">
+        <div class="dash-section-header" style="background:linear-gradient(90deg,rgba(16,185,129,0.08),transparent)">
+          <span class="dash-section-title">🔐 Social Login (OAuth)</span>
+          <span id="oauth-status-badge" class="badge" style="font-size:0.72rem"></span>
+        </div>
+        <div class="dash-section-body">
+
+          <!-- Info bar -->
+          <div style="display:flex;align-items:flex-start;gap:0.6rem;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.8rem;color:var(--text-muted)">
+            <span>ℹ️</span>
+            <span>Enter your Google / Apple OAuth credentials. Click <strong style="color:var(--text)">Configure Supabase</strong> to activate them. Credentials are saved locally in your browser.</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+            <!-- Google -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem">
+              <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem">
+                <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.7 2.5 30.2 0 24 0 14.7 0 6.8 5.4 2.9 13.2l7.9 6.1C12.6 13 17.9 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.5 2.9-2.2 5.4-4.7 7l7.3 5.7c4.3-4 6.7-9.9 6.7-16.7z"/><path fill="#FBBC05" d="M10.8 28.6A14.9 14.9 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l8.2-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.3-5.7c-2 1.4-4.6 2.2-7.9 2.2-6.1 0-11.3-4.1-13.2-9.6l-8.2 6.1C6.7 42.5 14.7 48 24 48z"/></svg>
+                <span style="font-weight:600;color:var(--text)">Google OAuth</span>
+                <span id="google-badge" class="badge" style="font-size:0.7rem;margin-left:auto"></span>
+              </div>
+              <div class="upload-form" style="padding:0;background:none;border:none">
+                <div class="form-group">
+                  <label>Client ID <span style="color:var(--text-muted);font-size:0.71rem">from Google Cloud Console</span></label>
+                  <div style="position:relative">
+                    <input type="text" id="google-client-id" placeholder="123456789-abc….apps.googleusercontent.com"
+                      style="font-family:monospace;font-size:0.78rem;padding-right:5rem" oninput="updateOAuthStatus()">
+                    <button class="tbl-btn primary" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:0.28rem 0.6rem;font-size:0.72rem"
+                      onclick="pasteField('google-client-id')">Paste</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Client Secret <span style="color:var(--text-muted);font-size:0.71rem">keep private</span></label>
+                  <div style="position:relative">
+                    <input type="password" id="google-client-secret" placeholder="GOCSPX-…"
+                      style="font-family:monospace;font-size:0.78rem;padding-right:5rem" oninput="updateOAuthStatus()">
+                    <button class="tbl-btn primary" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:0.28rem 0.6rem;font-size:0.72rem"
+                      onclick="toggleFieldVisibility('google-client-secret', this)">Show</button>
+                  </div>
+                </div>
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank"
+                  style="font-size:0.75rem;color:var(--purple-light);text-decoration:none;display:inline-block;margin-top:0.25rem">
+                  → Get from Google Cloud Console ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- Apple -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem">
+              <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem">
+                <svg width="20" height="22" viewBox="0 0 814 1000"><path fill="currentColor" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.3-164-39.3c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 376.7 0 248.1 0 127.3c0-70.7 17.4-140 51.4-198.1C107.6-65 187.1-105 271.1-105c75.8 0 138.3 52.4 185.6 52.4 45.4 0 117.5-55.5 210.4-55.5zM549.7-107.3c-3.9-.5-7.6-.9-11.7-.9-52 0-130.3 34.2-168.5 77.9-33.2 37-63.5 94.7-63.5 152.9 0 6.5.6 12.8 1.3 19.5 3.9.5 7.9.9 11.7.9 56.8 0 132.8-38.2 170.4-82.3 34.8-40.5 63.1-97.3 60.3-167z"/></svg>
+                <span style="font-weight:600;color:var(--text)">Apple OAuth</span>
+                <span id="apple-badge" class="badge" style="font-size:0.7rem;margin-left:auto"></span>
+              </div>
+              <div class="upload-form" style="padding:0;background:none;border:none">
+                <div class="form-group">
+                  <label>Service ID <span style="color:var(--text-muted);font-size:0.71rem">com.yourapp.service</span></label>
+                  <input type="text" id="apple-client-id" placeholder="com.beatmarket.service"
+                    style="font-family:monospace;font-size:0.78rem" oninput="updateOAuthStatus()">
+                </div>
+                <div class="form-group">
+                  <label>Team ID</label>
+                  <input type="text" id="apple-team-id" placeholder="ABCDE12345"
+                    style="font-family:monospace;font-size:0.78rem" oninput="updateOAuthStatus()">
+                </div>
+                <div class="form-group">
+                  <label>Key ID</label>
+                  <input type="text" id="apple-key-id" placeholder="XYZABC1234"
+                    style="font-family:monospace;font-size:0.78rem" oninput="updateOAuthStatus()">
+                </div>
+                <div class="form-group">
+                  <label>Private Key <span style="color:var(--text-muted);font-size:0.71rem">-----BEGIN PRIVATE KEY-----</span></label>
+                  <textarea id="apple-private-key" rows="3" placeholder="Paste your .p8 key contents here…"
+                    style="font-family:monospace;font-size:0.72rem;background:var(--bg-primary);border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:0.6rem;width:100%;resize:vertical" oninput="updateOAuthStatus()"></textarea>
+                </div>
+                <a href="https://developer.apple.com/account/resources/identifiers/list/serviceId" target="_blank"
+                  style="font-size:0.75rem;color:var(--purple-light);text-decoration:none;display:inline-block;margin-top:0.1rem">
+                  → Apple Developer Console ↗
+                </a>
+              </div>
+            </div>
+
+          </div><!-- /grid -->
+
+          <!-- Redirect URI info -->
+          <div style="margin-top:1rem;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:0.75rem 1rem">
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.4rem">📋 Add this Redirect URI in both Google Cloud Console and Apple Developer:</div>
+            <code id="oauth-redirect-uri" style="font-size:0.78rem;color:#a78bfa;user-select:all">https://zddsiwltiovntwlawjtd.supabase.co/auth/v1/callback</code>
+            <button class="tbl-btn primary" style="margin-left:0.75rem;padding:0.28rem 0.7rem;font-size:0.72rem" onclick="copyOAuthRedirect()">📋 Copy</button>
+          </div>
+
+          <!-- Action buttons -->
+          <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;margin-top:1rem">
+            <button class="upload-btn" style="padding:0.6rem 1.5rem" onclick="saveOAuthKeys()">💾 Save Credentials</button>
+            <button class="tbl-btn primary" style="padding:0.55rem 1.2rem;background:linear-gradient(135deg,#059669,#10B981);border:none;color:#fff" onclick="applyOAuthToSupabase()">
+              🚀 Configure Supabase
+            </button>
+            <button class="tbl-btn danger" style="padding:0.55rem 1rem" onclick="clearOAuthKeys()">🗑 Clear</button>
+            <a href="https://supabase.com/dashboard/project/zddsiwltiovntwlawjtd/auth/providers" target="_blank"
+              style="font-size:0.8rem;color:var(--purple-light);text-decoration:none">
+              → Supabase Auth Providers ↗
+            </a>
+          </div>
+
+          <!-- Result message -->
+          <div id="oauth-result" style="display:none;margin-top:0.75rem;padding:0.65rem 1rem;border-radius:8px;font-size:0.82rem"></div>
+
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="dash-section" style="margin-top:1rem">
+        <div class="dash-section-header"><span class="dash-section-title">⚡ Quick Actions</span></div>
+        <div class="dash-section-body" style="display:flex;gap:0.75rem;flex-wrap:wrap">
+          <button class="tbl-btn primary" style="padding:0.6rem 1.25rem;font-size:0.85rem" onclick="alert('Cache clear: connect to server')">🔄 Clear Cache</button>
+          <button class="tbl-btn primary" style="padding:0.6rem 1.25rem;font-size:0.85rem" onclick="alert('Backup: connect to server')">💾 Backup Database</button>
+          <button class="tbl-btn success" style="padding:0.6rem 1.25rem;font-size:0.85rem" onclick="alert('Newsletter: connect to email provider')">📧 Send Newsletter</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAGES ── -->
+    <section id="section-pages" class="hidden">
+      <style>
+        .pages-layout { display:grid; grid-template-columns:220px 1fr; gap:1.25rem; align-items:start; }
+        .page-nav-list { list-style:none; padding:0; margin:0; }
+        .page-nav-item {
+          display:flex; align-items:center; justify-content:space-between;
+          padding:0.65rem 1rem;
+          border-radius:var(--radius-sm);
+          cursor:pointer;
+          font-size:0.87rem;
+          font-weight:500;
+          color:var(--text-secondary);
+          margin-bottom:2px;
+          transition:all var(--transition);
+        }
+        .page-nav-item:hover { background:var(--bg-glass-light); color:var(--text-primary); }
+        .page-nav-item.active { background:var(--purple-dim); color:var(--purple-light); font-weight:600; }
+        .page-nav-dot { width:6px;height:6px;border-radius:50%;background:var(--purple);opacity:0.5; }
+        .page-nav-item.active .page-nav-dot { opacity:1; }
+        .editor-toolbar {
+          display:flex; flex-wrap:wrap; gap:4px;
+          padding:0.5rem 0.75rem;
+          background:var(--bg-secondary);
+          border:1.5px solid var(--border);
+          border-bottom:none;
+          border-radius:var(--radius-md) var(--radius-md) 0 0;
+        }
+        .editor-toolbar button {
+          padding:4px 8px;
+          border-radius:4px;
+          font-size:0.8rem;
+          font-weight:700;
+          color:var(--text-secondary);
+          background:transparent;
+          transition:all var(--transition);
+        }
+        .editor-toolbar button:hover { background:var(--bg-glass-light); color:var(--text-primary); }
+        .editor-toolbar .toolbar-sep { width:1px;height:20px;background:var(--border);margin:0 4px; }
+        #page-editor {
+          width:100%;
+          min-height:320px;
+          padding:1rem;
+          background:var(--bg-secondary);
+          border:1.5px solid var(--border);
+          border-radius:0 0 var(--radius-md) var(--radius-md);
+          color:var(--text-primary);
+          font-family:inherit;
+          font-size:0.88rem;
+          line-height:1.7;
+          resize:vertical;
+          outline:none;
+          transition:border-color var(--transition);
+        }
+        #page-editor:focus { border-color:var(--purple); }
+        .page-save-bar {
+          display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+          padding:1rem 1.5rem;
+          background:var(--bg-card);
+          border-top:1px solid var(--border);
+          border-radius:0 0 var(--radius-lg) var(--radius-lg);
+        }
+        .page-save-msg { font-size:0.82rem;color:var(--green);font-weight:600; display:none; }
+        @media(max-width:900px) { .pages-layout { grid-template-columns:1fr; } }
+      </style>
+
+      <!-- Page selector sidebar + editor -->
+      <div class="pages-layout">
+
+        <!-- Page list -->
+        <div class="dash-section">
+          <div class="dash-section-header"><span class="dash-section-title">📝 Site Pages</span></div>
+          <div style="padding:0.5rem">
+            <ul class="page-nav-list" id="page-nav-list">
+              <li class="page-nav-item active" data-slug="about" onclick="loadPageEditor('about')">
+                🏢 About <span class="page-nav-dot"></span>
+              </li>
+              <li class="page-nav-item" data-slug="blog" onclick="loadPageEditor('blog')">
+                📝 Blog <span class="page-nav-dot"></span>
+              </li>
+              <li class="page-nav-item" data-slug="pricing" onclick="loadPageEditor('pricing')">
+                💳 Pricing <span class="page-nav-dot"></span>
+              </li>
+              <li class="page-nav-item" data-slug="faq" onclick="loadPageEditor('faq')">
+                ❓ FAQ <span class="page-nav-dot"></span>
+              </li>
+              <li class="page-nav-item" data-slug="terms" onclick="loadPageEditor('terms')">
+                ⚖️ Terms <span class="page-nav-dot"></span>
+              </li>
+              <li class="page-nav-item" data-slug="privacy" onclick="loadPageEditor('privacy')">
+                🔒 Privacy <span class="page-nav-dot"></span>
+              </li>
+            </ul>
+          </div>
+          <div style="padding:0.75rem 1rem;border-top:1px solid var(--border)">
+            <a href="page.html?p=about" target="_blank" class="tbl-btn primary" style="width:100%;justify-content:center;font-size:0.8rem;padding:0.55rem;display:flex">
+              🔗 Preview Page
+            </a>
+          </div>
+        </div>
+
+        <!-- Editor -->
+        <div class="dash-section">
+          <div class="dash-section-header">
+            <span class="dash-section-title" id="editor-page-title">✏️ Edit Page</span>
+            <span style="font-size:0.75rem;color:var(--text-muted)" id="editor-slug-badge">about</span>
+          </div>
+          <div class="dash-section-body">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px">Page Title</label>
+                <input type="text" id="pf-title" placeholder="Page title">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px">Tag / Badge</label>
+                <input type="text" id="pf-tag" placeholder="e.g. Our Story">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.75rem">
+              <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px">Subtitle</label>
+              <input type="text" id="pf-subtitle" placeholder="Short description shown under the title">
+            </div>
+
+            <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px">Page Content (HTML)</label>
+            <div class="editor-toolbar">
+              <button onclick="execCmd('bold')" title="Bold"><b>B</b></button>
+              <button onclick="execCmd('italic')" title="Italic"><i>I</i></button>
+              <button onclick="execCmd('underline')" title="Underline"><u>U</u></button>
+              <div class="toolbar-sep"></div>
+              <button onclick="wrapTag('h2')" title="Heading">H2</button>
+              <button onclick="wrapTag('h3')" title="Subheading">H3</button>
+              <div class="toolbar-sep"></div>
+              <button onclick="execCmd('insertUnorderedList')" title="Bullet list">• List</button>
+              <button onclick="execCmd('insertOrderedList')" title="Numbered list"># List</button>
+              <div class="toolbar-sep"></div>
+              <button onclick="insertLink()" title="Insert link">🔗 Link</button>
+              <button onclick="execCmd('removeFormat')" title="Clear format">Tx</button>
+              <div class="toolbar-sep"></div>
+              <button onclick="toggleSource()" id="source-toggle" title="Toggle HTML source">&lt;/&gt;</button>
+            </div>
+            <div id="page-editor" contenteditable="true" spellcheck="false"></div>
+            <textarea id="page-source" style="display:none;width:100%;min-height:320px;padding:1rem;background:var(--bg-secondary);border:1.5px solid var(--purple);border-radius:0 0 var(--radius-md) var(--radius-md);color:var(--purple-light);font-family:monospace;font-size:0.82rem;resize:vertical;outline:none"></textarea>
+          </div>
+
+          <div class="page-save-bar">
+            <div>
+              <label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:4px">Footer Copyright Text</label>
+              <input type="text" id="pf-copyright" placeholder="© 2026 BeatMarket. All rights reserved." style="width:360px;max-width:100%;padding:0.5rem 0.8rem;border-radius:var(--radius-sm);background:var(--bg-secondary);border:1.5px solid var(--border);color:var(--text-primary);font-size:0.82rem;font-family:inherit;outline:none">
+            </div>
+            <div style="display:flex;align-items:center;gap:1rem">
+              <span class="page-save-msg" id="page-save-msg">✓ Saved!</span>
+              <button class="upload-btn" style="padding:0.6rem 1.5rem" onclick="saveCurrent()">💾 Save Page</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAYOUTS ── -->
+    <section id="section-payouts" class="hidden">
+
+      <!-- Filter tabs -->
+      <div id="payout-filter-tabs" style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center;min-height:2.5rem">
+        <button class="tbl-btn active" id="pft-all"      onclick="loadAdminPayouts('all')"      style="font-size:0.78rem;white-space:nowrap">All</button>
+        <button class="tbl-btn"        id="pft-pending"  onclick="loadAdminPayouts('pending')"  style="font-size:0.78rem;white-space:nowrap">⏳ Pending</button>
+        <button class="tbl-btn"        id="pft-approved" onclick="loadAdminPayouts('approved')" style="font-size:0.78rem;white-space:nowrap">✅ Approved</button>
+        <button class="tbl-btn"        id="pft-rejected" onclick="loadAdminPayouts('rejected')" style="font-size:0.78rem;white-space:nowrap">❌ Rejected</button>
+        <button class="tbl-btn"        id="pft-paid"     onclick="loadAdminPayouts('paid')"     style="font-size:0.78rem;white-space:nowrap">💰 Paid</button>
+        <button class="tbl-btn"                          onclick="loadAdminPayouts(_payoutFilter)" style="font-size:0.78rem;white-space:nowrap">🔄 Refresh</button>
+      </div>
+
+
+      <div class="dash-section">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>Date</th><th>Seller</th><th>Amount</th><th>Method</th><th>Payment Details</th><th>Status</th><th>Admin Note</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="admin-payouts-body">
+              <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">Loading payouts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Review payout modal -->
+    <div id="payout-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6);position:relative">
+        <button onclick="closePayoutModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">&times;</button>
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.35rem" id="payout-modal-title">Review Payout Request</h3>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1.25rem" id="payout-modal-info"></p>
+
+        <!-- Seller payment details -->
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.82rem">
+          <div style="color:var(--text-muted);font-size:0.72rem;margin-bottom:4px">SELLER PAYMENT DETAILS</div>
+          <div id="payout-modal-details" style="color:var(--text-primary);word-break:break-all"></div>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:0.8rem">Note / Reason <span style="color:var(--text-muted);font-weight:400">(seller receives this in email)</span></label>
+          <textarea id="payout-modal-note" rows="3" placeholder="e.g. Approved — payment sent to PayPal on 2026-03-29&#10;e.g. Rejected — minimum balance not reached yet" style="width:100%;padding:0.6rem 0.8rem;border-radius:var(--radius-sm);background:var(--bg-secondary);border:1.5px solid var(--border);color:var(--text-primary);font-family:inherit;font-size:0.83rem;resize:vertical;outline:none"></textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:1rem">
+          <button class="upload-btn" onclick="confirmReview('approved')" style="background:linear-gradient(135deg,#059669,#10b981);font-size:0.82rem;padding:0.6rem">✅ Approve</button>
+          <button class="upload-btn" onclick="confirmReview('paid')"     style="background:linear-gradient(135deg,#d97706,#b45309);font-size:0.82rem;padding:0.6rem">💰 Mark Paid</button>
+          <button class="upload-btn" onclick="confirmReview('rejected')" style="background:linear-gradient(135deg,#dc2626,#ef4444);font-size:0.82rem;padding:0.6rem;grid-column:1/-1">❌ Reject (seller will be notified)</button>
+        </div>
+        <div id="payout-modal-msg" style="display:none;margin-top:0.75rem;font-size:0.82rem;text-align:center"></div>
+      </div>
+    </div>
+
+    <!-- Beat reject reason modal -->
+    <div id="beat-reject-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+      <div style="background:var(--bg-card);border:1px solid rgba(239,68,68,0.3);border-radius:16px;padding:2rem;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6);position:relative">
+        <button onclick="closeBeatRejectModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">&times;</button>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">❌</div>
+          <div>
+            <div style="font-size:1rem;font-weight:800">Reject Beat</div>
+            <div style="font-size:0.8rem;color:var(--text-muted)" id="beat-reject-title"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="font-size:0.8rem">Reason <span style="color:var(--red);font-weight:400">*required</span> <span style="color:var(--text-muted);font-weight:400">(sent to seller by email)</span></label>
+          <textarea id="beat-reject-reason" rows="4" placeholder="e.g. Audio quality too low — please re-export at 320kbps or higher&#10;e.g. Inappropriate content — see community guidelines&#10;e.g. Title or cover art missing" style="width:100%;padding:0.6rem 0.8rem;border-radius:var(--radius-sm);background:var(--bg-secondary);border:1.5px solid rgba(239,68,68,0.4);color:var(--text-primary);font-family:inherit;font-size:0.83rem;resize:vertical;outline:none"></textarea>
+        </div>
+        <div style="display:flex;gap:0.6rem;margin-top:1rem">
+          <button onclick="closeBeatRejectModal()" style="flex:1;padding:0.65rem;border-radius:var(--radius-sm);background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-secondary);font-size:0.82rem;cursor:pointer">Cancel</button>
+          <button onclick="submitBeatRejection()" style="flex:2;padding:0.65rem;border-radius:var(--radius-sm);background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;font-weight:700;font-size:0.82rem;cursor:pointer;border:none">❌ Reject &amp; Notify Seller</button>
+        </div>
+        <div id="beat-reject-msg" style="display:none;margin-top:0.75rem;font-size:0.82rem;text-align:center"></div>
+      </div>
+    </div>
+
+  </div><!-- /dash-content -->
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/data.js"></script>
+<script src="js/security.js"></script>
+<script>
+// ── Auth guard ────────────────────────────────────────────────────────
+const session = Auth.requireRole("admin");
+if (session) {
+  SessionGuard.start(); // 60-min inactivity timeout — calls Auth.logout() on idle
+  document.getElementById("sidebar-name").textContent  = session.name;
+  document.getElementById("sidebar-avatar").textContent = Auth.getInitials(session.name);
+}
+
+// ── Sidebar + Logout ──────────────────────────────────────────────────
+// Mobile backdrop overlay (sits below sidebar z-index:200)
+const _sidebarBackdrop = document.createElement("div");
+_sidebarBackdrop.id = "sidebar-backdrop";
+_sidebarBackdrop.style.cssText = "display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:150";
+document.body.appendChild(_sidebarBackdrop);
+
+function _toggleSidebar(forceClose) {
+  const sidebar = document.getElementById("dash-sidebar");
+  const isOpen = sidebar.classList.contains("open");
+  const isMobile = window.innerWidth <= 900;
+  if (forceClose || isOpen) {
+    sidebar.classList.remove("open");
+    _sidebarBackdrop.style.display = "none";
+  } else {
+    sidebar.classList.add("open");
+    if (isMobile) _sidebarBackdrop.style.display = "block";
+  }
+}
+
+document.getElementById("dash-menu-btn").addEventListener("click", () => _toggleSidebar());
+_sidebarBackdrop.addEventListener("click", () => _toggleSidebar(true));
+
+document.getElementById("logout-btn").addEventListener("click", () => {
+  Auth.logout(); window.location.href = "admin-login.html";
+});
+
+// ── Section navigation ────────────────────────────────────────────────
+const TITLES = { overview:"📊 Overview", users:"👥 Users", beats:"🎵 Beats", orders:"🛒 Orders", moderation:"🔍 Beat Review", payouts:"💸 Payouts", reports:"📈 Reports", pages:"📝 Pages", settings:"⚙️ Settings" };
+function showSection(id) {
+  document.querySelectorAll(".dash-main section").forEach((s) => s.classList.add("hidden"));
+  document.getElementById("section-" + id).classList.remove("hidden");
+  document.querySelectorAll(".dash-nav-link").forEach((l) => l.classList.remove("active"));
+  const link = document.querySelector(`.dash-nav-link[data-section="${id}"]`);
+  if (link) link.classList.add("active");
+  document.getElementById("dash-page-title").textContent = TITLES[id] || id;
+  // Always close sidebar + hide backdrop when switching sections
+  _toggleSidebar(true);
+  // Auto-load sections on navigate
+  if (id === "pages")   loadPageEditor(_currentPageSlug || "about");
+  if (id === "payouts") loadAdminPayouts(_payoutFilter || "all");
+}
+
+// ── ADMIN PAYOUT MANAGEMENT ──────────────────────────────────────────
+let _payoutFilter  = "all";
+let _reviewingId   = null;
+
+const PAYOUT_STATUS_BADGE = {
+  pending:   `<span class="badge buyer">⏳ pending</span>`,
+  approved:  `<span class="badge active">✅ approved</span>`,
+  rejected:  `<span class="badge danger">❌ rejected</span>`,
+  paid:      `<span class="badge completed">💰 paid</span>`,
+  cancelled: `<span class="badge">cancelled</span>`,
+};
+
+async function loadAdminPayouts(filter) {
+  _payoutFilter = filter || "all";
+
+  // Update filter tab active state
+  ["all","pending","approved","rejected","paid"].forEach(f => {
+    const btn = document.getElementById("pft-" + f);
+    if (btn) btn.classList.toggle("active", f === _payoutFilter);
+  });
+
+  const tbody = document.getElementById("admin-payouts-body");
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">Loading…</td></tr>`;
+
+  const payouts = await API.getAllPayouts(_payoutFilter);
+
+  // Update pending badge in sidebar
+  if (_payoutFilter === "all" || _payoutFilter === "pending") {
+    const pending = payouts.filter(p => p.status === "pending").length;
+    const badge = document.getElementById("badge-payouts");
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? "inline-flex" : "none"; }
+  }
+
+  if (!payouts.length) {
+    const extra = _payoutFilter !== "all" ? " with status '" + _payoutFilter + "'" : "";
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">No payout requests${extra}.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = payouts.map(p => {
+    const date   = (p.requested_at || "").slice(0, 10);
+    const seller = p.profiles?.name || "Unknown";
+    const handle = p.profiles?.handle ? `<small style="color:var(--text-muted)">${p.profiles.handle}</small>` : "";
+    const badge  = PAYOUT_STATUS_BADGE[p.status] || p.status;
+    const safeId   = p.id;
+    const safeName = (p.profiles?.name || "Unknown").replace(/'/g, "&#39;");
+    const canAct   = p.status === "pending" || p.status === "approved";
+    const actions  = canAct
+      ? `<button class="tbl-btn" onclick="openPayoutModal('${safeId}','${safeName}',${p.amount},'${p.method||""}','${(p.payment_details||"").replace(/'/g,"&#39;")}')">Review</button>`
+      : `<span style="color:var(--text-muted);font-size:0.75rem">—</span>`;
+
+    return `<tr>
+      <td style="color:var(--text-muted);font-size:0.8rem">${date}</td>
+      <td style="font-weight:700">${seller}<br>${handle}</td>
+      <td style="font-weight:700;color:var(--green)">$${parseFloat(p.amount).toFixed(2)}</td>
+      <td>${p.method || "—"}</td>
+      <td style="font-size:0.78rem;color:var(--text-secondary);max-width:140px;overflow:hidden;text-overflow:ellipsis" title="${p.payment_details || ""}">${p.payment_details || "—"}</td>
+      <td>${badge}</td>
+      <td style="font-size:0.78rem;color:var(--text-muted)">${p.note || ""}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join("");
+}
+
+function openPayoutModal(id, seller, amount, method, details) {
+  _reviewingId = id;
+  document.getElementById("payout-modal-title").textContent = `Review Payout — ${seller}`;
+  document.getElementById("payout-modal-info").textContent  = `$${parseFloat(amount).toFixed(2)} via ${method || "N/A"}`;
+  document.getElementById("payout-modal-details").textContent = details || "—";
+  document.getElementById("payout-modal-note").value = "";
+  document.getElementById("payout-modal-msg").style.display = "none";
+  const modal = document.getElementById("payout-modal");
+  modal.style.display = "flex";
+}
+
+function closePayoutModal() {
+  document.getElementById("payout-modal").style.display = "none";
+  _reviewingId = null;
+}
+
+async function confirmReview(status) {
+  if (!_reviewingId) return;
+  const note  = document.getElementById("payout-modal-note").value.trim();
+  const msgEl = document.getElementById("payout-modal-msg");
+
+  // Require a reason when rejecting
+  if (status === "rejected" && !note) {
+    msgEl.textContent = "⚠ Please enter a reason — the seller will see it in their email.";
+    msgEl.style.color = "var(--red)";
+    msgEl.style.display = "block";
+    document.getElementById("payout-modal-note").focus();
+    return;
+  }
+
+  msgEl.textContent = "Saving…";
+  msgEl.style.color = "var(--text-muted)";
+  msgEl.style.display = "block";
+
+  const result = await API.reviewPayout(_reviewingId, status, note);
+
+  if (!result.ok) {
+    msgEl.textContent = "Error: " + result.error;
+    msgEl.style.color = "var(--red)";
+    return;
+  }
+
+  // Email is fired automatically by DB trigger — no extra call needed.
+  // Status badge flash
+  const label = status === "paid" ? "💰 Marked as Paid" : status === "approved" ? "✅ Approved" : "❌ Rejected";
+  msgEl.textContent = label + " — seller notified by email";
+  msgEl.style.color = "var(--green)";
+  setTimeout(() => {
+    closePayoutModal();
+    loadAdminPayouts(_payoutFilter);
+  }, 1200);
+}
+
+// Close modal on backdrop click
+document.getElementById("payout-modal").addEventListener("click", function(e) {
+  if (e.target === this) closePayoutModal();
+});
+
+
+// ── Pages Editor ────────────────────────────────────────────────
+const PAGE_DEFAULTS_ADMIN = {
+  about:   { title:"About BeatMarket",    tag:"Our Story",    subtitle:"The premier marketplace connecting producers and artists worldwide." },
+  blog:    { title:"BeatMarket Blog",     tag:"Latest News",  subtitle:"Tips, news, and insights for producers and artists." },
+  pricing: { title:"Pricing & Licenses",  tag:"License Types",subtitle:"Flexible licensing for every artist and every budget." },
+  faq:     { title:"Frequently Asked Questions", tag:"Help Center", subtitle:"Everything you need to know about BeatMarket." },
+  terms:   { title:"Terms of Service",   tag:"Legal",        subtitle:"Please read these terms carefully before using BeatMarket." },
+  privacy: { title:"Privacy Policy",     tag:"Privacy",      subtitle:"How BeatMarket collects, uses, and protects your data." },
+};
+
+let _currentPageSlug = "about";
+let _sourceMode = false;
+
+async function loadPageEditor(slug) {
+  _currentPageSlug = slug;
+
+  // Update nav active state
+  document.querySelectorAll(".page-nav-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.slug === slug);
+  });
+
+  // Update preview link
+  const previewLink = document.querySelector('#section-pages a[href]');
+  if (previewLink) previewLink.href = `page.html?p=${slug}`;
+
+  // Update editor header
+  const def = PAGE_DEFAULTS_ADMIN[slug] || {};
+  document.getElementById("editor-page-title").textContent = `✏️ Edit: ${def.title || slug}`;
+  document.getElementById("editor-slug-badge").textContent = slug;
+
+  // Try loading from Supabase
+  let data = null;
+  if (API.isReady()) {
+    data = await API.getPage(slug);
+  }
+
+  document.getElementById("pf-title").value    = data?.title    || def.title    || "";
+  document.getElementById("pf-tag").value      = data?.tag      || def.tag      || "";
+  document.getElementById("pf-subtitle").value = data?.subtitle || def.subtitle || "";
+  document.getElementById("pf-copyright").value = data?.copyright || "© 2026 BeatMarket. All rights reserved.";
+
+  // Load content into editor
+  const editor = document.getElementById("page-editor");
+  editor.innerHTML = data?.content || "<p>Start writing your page content here&hellip;</p>";
+
+  // Reset save message
+  const msg = document.getElementById("page-save-msg");
+  msg.style.display = "none";
+}
+
+async function saveCurrent() {
+  const slug = _currentPageSlug;
+  const title = document.getElementById("pf-title").value.trim();
+  const tag = document.getElementById("pf-tag").value.trim();
+  const subtitle = document.getElementById("pf-subtitle").value.trim();
+  const copyright = document.getElementById("pf-copyright").value.trim();
+  const content = _sourceMode ? document.getElementById("page-source").value : document.getElementById("page-editor").innerHTML;
+
+  const btn = document.querySelector('#section-pages .upload-btn');
+  const msg = document.getElementById("page-save-msg");
+
+  // Always save to localStorage as an instant fallback
+  try {
+    localStorage.setItem("bm_page_" + slug, JSON.stringify({ slug, title, tag, subtitle, content, copyright }));
+  } catch(e) {}
+
+  // If Supabase not ready, confirm localStorage only
+  if (!API.isReady()) {
+    msg.textContent = "⚠️ Saved locally only — add Supabase keys to persist";
+    msg.style.color = "var(--amber)";
+    msg.style.display = "block";
+    setTimeout(() => msg.style.display = "none", 5000);
+    return;
+  }
+
+  btn.textContent = "Saving…";
+  btn.disabled = true;
+
+  try {
+    const { error } = await supabase
+      .from("site_pages")
+      .upsert(
+        { slug, title, tag, subtitle, content, copyright, updated_at: new Date().toISOString() },
+        { onConflict: "slug" }
+      );
+
+    if (error) {
+      console.error("savePage error:", error);
+      let friendly = error.message;
+      if (error.code === "42P01") friendly = "Table not found — run site_pages SQL in Supabase first.";
+      else if (error.code === "42501" || friendly.includes("policy")) friendly = "Permission denied — log in as Admin via Supabase.";
+      msg.textContent = "❌ " + friendly;
+      msg.style.color = "var(--red)";
+    } else {
+      msg.textContent = "✓ Saved to Supabase!";
+      msg.style.color = "var(--green)";
+    }
+  } catch(e) {
+    console.error("savePage exception:", e);
+    msg.textContent = "❌ Network error: " + e.message;
+    msg.style.color = "var(--red)";
+  }
+
+  btn.textContent = "💾 Save Page";
+  btn.disabled = false;
+  msg.style.display = "block";
+  setTimeout(() => msg.style.display = "none", 5000);
+}
+
+function execCmd(cmd, value = null) {
+  document.getElementById("page-editor").focus();
+  document.execCommand(cmd, false, value);
+}
+
+function wrapTag(tag) {
+  document.getElementById("page-editor").focus();
+  document.execCommand("formatBlock", false, tag);
+}
+
+function insertLink() {
+  const url = prompt("Enter URL:", "https://");
+  if (url) execCmd("createLink", url);
+}
+
+function toggleSource() {
+  _sourceMode = !_sourceMode;
+  const editor = document.getElementById("page-editor");
+  const source = document.getElementById("page-source");
+  const btn    = document.getElementById("source-toggle");
+
+  if (_sourceMode) {
+    source.value = editor.innerHTML;
+    editor.style.display = "none";
+    source.style.display = "block";
+    btn.style.color = "var(--purple-light)";
+    btn.style.background = "var(--purple-dim)";
+  } else {
+    editor.innerHTML = source.value;
+    source.style.display = "none";
+    editor.style.display = "block";
+    btn.style.color = "";
+    btn.style.background = "";
+  }
+}
+
+// ── Chart helper ──────────────────────────────────────────────────────
+function drawBarChart(svgId, data, color, W, H) {
+  const svg = document.getElementById(svgId); if (!svg) return;
+  W=W||600; H=H||180;
+  const pad=40, maxVal=Math.max(...data.map((d)=>d.value)), barW=(W-pad*2)/data.length, chartH=H-40;
+  svg.innerHTML = data.map((d,i)=>{
+    const bh=(d.value/maxVal)*chartH, x=pad+i*barW+barW*0.15, y=H-bh-20, bw=barW*0.7;
+    return `<rect class="chart-bar" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4" fill="${color}" opacity="0.85"><title>${d.label}: $${d.value.toLocaleString()}</title></rect>
+      <text x="${x+bw/2}" y="${H-4}" text-anchor="middle" font-size="9" fill="#6B7280">${d.label}</text>
+      <text x="${x+bw/2}" y="${y-5}" text-anchor="middle" font-size="9" fill="#9999bb">$${(d.value/1000).toFixed(1)}K</text>`;
+  }).join("");
+}
+
+// ── Users Table ───────────────────────────────────────────────────────
+let allUsers = [];
+async function loadUsers() {
+  if (API.isReady()) {
+    const { data } = await supabase.from("profiles").select("id, name, role, status, created_at, handle").order("created_at", { ascending: false });
+    // Fetch emails from auth (admin only via service role — not available client-side, show id instead)
+    allUsers = (data || []).map((u) => ({ ...u, email: u.handle || u.id.slice(0,8)+"…" }));
+  } else {
+    allUsers = Auth.getAllUsers();
+  }
+  renderUsers();
+}
+
+function renderUsers(filter, roleFilter) {
+  const filtered = allUsers.filter((u) => {
+    const q = (filter||"").toLowerCase();
+    return (!q || (u.name||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q))
+        && (!roleFilter || u.role === roleFilter);
+  });
+  document.getElementById("st-users").textContent   = allUsers.length;
+  document.getElementById("st-sellers").textContent  = allUsers.filter((u)=>u.role==="seller").length;
+  document.getElementById("badge-users").textContent = allUsers.length;
+
+  document.getElementById("users-table-body").innerHTML = filtered.map((u) => {
+    const rb = Auth.getRoleBadge(u.role);
+    const joined = u.created_at ? new Date(u.created_at).toLocaleDateString() : u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—";
+    const isBanned = u.status === "banned";
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:0.6rem">
+        <div class="dash-avatar" style="width:32px;height:32px;font-size:0.7rem;background:linear-gradient(135deg,${rb.color}99,${rb.color})">${Auth.getInitials(u.name)}</div>
+        <span style="font-weight:700">${u.name}</span>
+      </div></td>
+      <td style="color:var(--text-secondary)">${u.email}</td>
+      <td><span class="badge ${u.role}">${rb.label}</span></td>
+      <td><span class="badge ${isBanned?'banned':'active'}">${isBanned?'Banned':'Active'}</span></td>
+      <td style="color:var(--text-muted)">${joined}</td>
+      <td><div class="tbl-btn-group">
+        ${u.role!=="admin" ? `<button class="tbl-btn ${isBanned?'success':'danger'}" onclick="toggleBan('${u.id}', ${isBanned})">${isBanned?'✓ Unban':'✕ Ban'}</button>` : '<span style="color:var(--text-muted);font-size:0.75rem">—</span>'}
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+
+async function toggleBan(userId, isBanned) {
+  const newStatus = isBanned ? "active" : "banned";
+  if (API.isReady()) {
+    await supabase.from("profiles").update({ status: newStatus }).eq("id", userId);
+    const u = allUsers.find((u) => u.id === userId);
+    if (u) u.status = newStatus;
+  } else {
+    Auth.updateUserStatus(userId, newStatus);
+  }
+  renderUsers(document.getElementById("user-search").value, document.getElementById("role-filter").value);
+}
+
+document.getElementById("user-search").addEventListener("input", (e) => renderUsers(e.target.value, document.getElementById("role-filter").value));
+document.getElementById("role-filter").addEventListener("change", (e) => renderUsers(document.getElementById("user-search").value, e.target.value));
+
+// ── Beats Table ───────────────────────────────────────────────────────
+let allAdminBeats = [];
+async function loadAdminBeats() {
+  if (API.isReady()) {
+    const { data } = await supabase.from("beats").select("*, profiles(name)").order("created_at", { ascending:false }).limit(100);
+    allAdminBeats = data || [];
+  } else {
+    allAdminBeats = typeof BEATS !== "undefined" ? BEATS : [];
+  }
+  renderAdminBeats();
+  // Wire up search (safe to call multiple times)
+  const searchEl = document.getElementById("admin-beat-search");
+  if (searchEl && !searchEl._wired) {
+    searchEl._wired = true;
+    searchEl.addEventListener("input", (e) => renderAdminBeats(e.target.value.toLowerCase()));
+  }
+}
+
+function renderAdminBeats(filter) {
+  const beats = filter ? allAdminBeats.filter((b)=>(b.title||"").toLowerCase().includes(filter)||(b.profiles?.name||b.producer||"").toLowerCase().includes(filter)) : allAdminBeats;
+  document.getElementById("admin-beats-body").innerHTML = beats.map((b) => {
+    const producer = b.profiles?.name || b.producer || "—";
+    const cover    = b.cover_url || b.cover || "";
+    const status   = b.status || "active";
+    const badge    = { active:"approved", pending:"pending", rejected:"rejected", inactive:"banned" }[status] || "pending";
+    const isActive = status === "active";
+    const actions  = isActive
+      ? `<button class="tbl-btn danger" onclick="deactivateBeat('${b.id}')">Deactivate</button>`
+      : `<button class="tbl-btn success" onclick="activateBeat('${b.id}')" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);color:#10b981">✅ Approve</button>
+         <button class="tbl-btn danger" onclick="deactivateBeat('${b.id}')" style="margin-left:4px">Deactivate</button>`;
+    return `<tr>
+      <td>${cover ? `<img src="${cover}" class="beat-thumb" alt="${b.title}">` : `<div class="beat-thumb" style="background:var(--bg-secondary);border-radius:6px"></div>`}</td>
+      <td style="font-weight:700">${b.title}</td>
+      <td style="color:var(--text-secondary)">${producer}</td>
+      <td><span class="badge active">${b.genre}</span></td>
+      <td>${b.bpm||"—"}</td>
+      <td>$${parseFloat(b.price||0).toFixed(2)}</td>
+      <td>${formatNumber(b.plays||0)}</td>
+      <td><span class="badge ${badge}">${status}</span></td>
+      <td><div class="tbl-btn-group">${actions}</div></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem">No beats yet</td></tr>`;
+}
+
+async function deactivateBeat(id) {
+  if (!confirm("Deactivate this beat?")) return;
+  if (API.isReady()) { await supabase.from("beats").update({ status:"inactive" }).eq("id", id); }
+  const b = allAdminBeats.find((b)=>b.id===id);
+  if (b) b.status = "inactive";
+  renderAdminBeats();
+}
+
+async function activateBeat(id) {
+  if (API.isReady()) { await supabase.from("beats").update({ status:"active" }).eq("id", id); }
+  const b = allAdminBeats.find((b)=>b.id===id);
+  if (b) b.status = "active";
+  API.clearBeatsCache();
+  renderAdminBeats();
+  showToast('Beat approved and live ✅');
+}
+
+async function reactivateAllBeats() {
+  const inactive = allAdminBeats.filter(b => b.status !== 'active');
+  if (!inactive.length) { showToast('All beats are already active ✅'); return; }
+  if (!confirm(`Reactivate all ${inactive.length} inactive/pending beats?`)) return;
+  if (API.isReady()) {
+    const ids = inactive.map(b => b.id);
+    // Update all inactive/pending/rejected beats to active
+    await Promise.all(ids.map(id => supabase.from('beats').update({ status:'active' }).eq('id', id)));
+  }
+  inactive.forEach(b => b.status = 'active');
+  API.clearBeatsCache();
+  renderAdminBeats();
+  showToast(`✅ ${inactive.length} beat(s) reactivated and now live!`);
+}
+
+function showToast(msg, duration = 3000) {
+  let t = document.getElementById('admin-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'admin-toast';
+    t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:0.65rem 1.4rem;border-radius:50px;font-weight:700;font-size:0.85rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.opacity = '0', duration);
+}
+
+
+// ── Beat Moderation ───────────────────────────────────────────────────
+async function loadModeration() {
+  let pending = [];
+  if (API.isReady()) {
+    const { data } = await supabase.from("beats").select("id, title, genre, created_at, profiles(name)").eq("status","pending").order("created_at", { ascending:false });
+    pending = data || [];
+  }
+  if (!pending.length) {
+    document.getElementById("moderation-body").innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">No beats pending review 🎉</td></tr>`;
+    return;
+  }
+  const badgeEl = document.querySelector('.dash-nav-link[data-section="moderation"] .dash-nav-badge');
+  if (badgeEl) badgeEl.textContent = pending.length || "0";
+
+  document.getElementById("moderation-body").innerHTML = pending.map((p, i) => `
+    <tr id="mod-row-${i}">
+      <td style="font-weight:700">${p.title}</td>
+      <td style="color:var(--text-secondary)">${p.profiles?.name || "—"}</td>
+      <td><span class="badge active">${p.genre}</span></td>
+      <td style="color:var(--text-muted)">${(p.created_at||"").slice(0,10)}</td>
+      <td><span class="badge pending" id="mod-status-${i}">Pending</span></td>
+      <td><div class="tbl-btn-group">
+        <button class="tbl-btn success" onclick="moderateBeat('${p.id}', ${i}, 'active', '${(p.title||"").replace(/'/g,"&#39;")}')">✓ Approve</button>
+        <button class="tbl-btn danger"  onclick="moderateBeat('${p.id}', ${i}, 'rejected', '${(p.title||"").replace(/'/g,"&#39;")}')" style="background:rgba(239,68,68,0.12)">✕ Reject</button>
+      </div></td>
+    </tr>`).join("");
+}
+
+// Beat rejection modal state
+let _rejectingBeatId  = null;
+let _rejectingBeatRow = null;
+
+function openBeatRejectModal(id, i, title) {
+  _rejectingBeatId  = id;
+  _rejectingBeatRow = i;
+  document.getElementById("beat-reject-title").textContent = `"${title}"` ;
+  document.getElementById("beat-reject-reason").value = "";
+  document.getElementById("beat-reject-msg").style.display = "none";
+  document.getElementById("beat-reject-modal").style.display = "flex";
+}
+
+function closeBeatRejectModal() {
+  document.getElementById("beat-reject-modal").style.display = "none";
+  _rejectingBeatId  = null;
+  _rejectingBeatRow = null;
+}
+
+async function submitBeatRejection() {
+  const reason = document.getElementById("beat-reject-reason").value.trim();
+  const msgEl  = document.getElementById("beat-reject-msg");
+  if (!reason) {
+    msgEl.textContent = "Please enter a reason — the seller will receive it by email.";
+    msgEl.style.color = "var(--red)";
+    msgEl.style.display = "block";
+    return;
+  }
+  msgEl.textContent = "Rejecting…";
+  msgEl.style.color = "var(--text-muted)";
+  msgEl.style.display = "block";
+
+  if (API.isReady()) {
+    // Store reason in the description field so the DB trigger picks it up
+    await supabase.from("beats").update({ status: "rejected", description: reason }).eq("id", _rejectingBeatId);
+  }
+
+  // Update row UI
+  const statusEl = document.getElementById("mod-status-" + _rejectingBeatRow);
+  if (statusEl) { statusEl.textContent = "Rejected"; statusEl.className = "badge rejected"; }
+  document.querySelectorAll(`#mod-row-${_rejectingBeatRow} .tbl-btn`).forEach((b) => { b.disabled=true; b.style.opacity="0.4"; });
+
+  msgEl.textContent = "❌ Rejected — seller notified by email";
+  msgEl.style.color = "var(--green)";
+  setTimeout(closeBeatRejectModal, 1200);
+}
+
+async function moderateBeat(id, i, status, title) {
+  if (status === "rejected") {
+    openBeatRejectModal(id, i, title || "this beat");
+    return;
+  }
+  // Approve path
+  if (API.isReady()) { await supabase.from("beats").update({ status }).eq("id", id); }
+  const statusEl = document.getElementById("mod-status-" + i);
+  if (statusEl) { statusEl.textContent = "Approved ✓"; statusEl.className = "badge approved"; }
+  document.querySelectorAll(`#mod-row-${i} .tbl-btn`).forEach((b) => { b.disabled=true; b.style.opacity="0.4"; });
+}
+
+// ── Orders Table ──────────────────────────────────────────────────────
+async function loadOrders() {
+  let orders = [];
+  if (API.isReady()) {
+    const { data } = await supabase
+      .from("orders")
+      .select("*, beats(title), buyer:profiles!orders_buyer_id_fkey(name), producer:profiles!orders_producer_id_fkey(name)")
+      .order("created_at", { ascending: false }).limit(100);
+    orders = data || [];
+  }
+  const tbody = document.getElementById("admin-orders-body");
+  if (!orders.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">No orders yet</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = orders.map((o,i) => `<tr>
+    <td style="color:var(--text-muted);font-size:0.75rem">${String(o.id||"").slice(-6)||"#"+(i+1)}</td>
+    <td style="font-weight:700">${o.beats?.title||"—"}</td>
+    <td>${o.buyer?.name||"—"}</td>
+    <td style="color:var(--text-secondary)">${o.producer?.name||"—"}</td>
+    <td><span class="badge seller">${o.license_type||"—"}</span></td>
+    <td style="font-weight:700;color:var(--green)">$${parseFloat(o.amount||0).toFixed(2)}</td>
+    <td style="color:var(--text-muted)">${(o.created_at||"").slice(0,10)}</td>
+    <td><span class="badge completed">${o.status||"completed"}</span></td>
+  </tr>`).join("");
+}
+
+// ── Live Stats ────────────────────────────────────────────────────────
+async function loadStats() {
+  if (!API.isReady()) { document.getElementById("st-revenue").textContent = "$48.0K"; return; }
+  const { data: orders } = await supabase.from("orders").select("amount");
+  const total = (orders||[]).reduce((sum,o) => sum + parseFloat(o.amount||0), 0);
+  document.getElementById("st-revenue").textContent = "$" + total.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+
+// ── Charts ────────────────────────────────────────────────────────────
+drawBarChart("admin-chart", [
+  {label:"Oct",value:28000},{label:"Nov",value:34000},{label:"Dec",value:41000},
+  {label:"Jan",value:36000},{label:"Feb",value:39000},{label:"Mar",value:48000},
+], "#7C3AED");
+drawBarChart("report-chart", [
+  {label:"Apr",value:18000},{label:"May",value:22000},{label:"Jun",value:19000},{label:"Jul",value:25000},
+  {label:"Aug",value:28000},{label:"Sep",value:31000},{label:"Oct",value:28000},{label:"Nov",value:34000},
+  {label:"Dec",value:41000},{label:"Jan",value:36000},{label:"Feb",value:39000},{label:"Mar",value:48000},
+], "#7C3AED", 700, 220);
+drawBarChart("license-report-chart", [
+  {label:"MP3",value:12000},{label:"WAV",value:18000},{label:"Unlimited",value:9500},{label:"Exclusive",value:8600},
+], "#10B981", 400);
+drawBarChart("genre-chart", [
+  {label:"Trap",value:18000},{label:"Drill",value:11000},{label:"Lo-Fi",value:9800},
+  {label:"R&B",value:7400},{label:"Afro",value:6200},
+], "#F59E0B", 400);
+
+// ── Stripe Key Management ─────────────────────────────────────────────
+const STRIPE_STORAGE_KEY = "bm_stripe_keys";
+
+function loadStripeKeys() {
+  const saved = localStorage.getItem(STRIPE_STORAGE_KEY);
+  if (!saved) { updateStripeIndicator(); return; }
+  try {
+    const keys = JSON.parse(saved);
+    if (keys.pk)    document.getElementById("stripe-pk").value    = keys.pk;
+    if (keys.sk)    document.getElementById("stripe-sk").value    = keys.sk;
+    if (keys.whsec) document.getElementById("stripe-whsec").value = keys.whsec;
+    // Apply publishable key globally for Stripe.js
+    if (keys.pk) window._stripePublishableKey = keys.pk;
+  } catch { localStorage.removeItem(STRIPE_STORAGE_KEY); }
+  updateStripeIndicator();
+  updateCliBlock();
+}
+
+function saveStripeKeys() {
+  const pk    = document.getElementById("stripe-pk").value.trim();
+  const sk    = document.getElementById("stripe-sk").value.trim();
+  const whsec = document.getElementById("stripe-whsec").value.trim();
+
+  if (!pk && !sk && !whsec) { alert("Please enter at least one key."); return; }
+
+  const isValidPk = pk.startsWith("pk_test_") || pk.startsWith("pk_live_");
+  const isValidSk = sk.startsWith("sk_test_") || sk.startsWith("sk_live_") || sk === "";
+  if (pk && !isValidPk) { alert("Publishable key must start with pk_test_ or pk_live_"); return; }
+  if (sk && !isValidSk) { alert("Secret key must start with sk_test_ or sk_live_"); return; }
+
+  localStorage.setItem(STRIPE_STORAGE_KEY, JSON.stringify({ pk, sk, whsec }));
+  if (pk) window._stripePublishableKey = pk;
+
+  updateStripeIndicator();
+  updateCliBlock();
+
+  const btn = document.querySelector('[onclick="saveStripeKeys()"]');
+  const orig = btn.textContent;
+  btn.textContent = "✅ Keys Saved!";
+  setTimeout(() => { btn.textContent = orig; }, 2000);
+}
+
+function clearStripeKeys() {
+  if (!confirm("Clear all saved Stripe keys?")) return;
+  localStorage.removeItem(STRIPE_STORAGE_KEY);
+  document.getElementById("stripe-pk").value    = "";
+  document.getElementById("stripe-sk").value    = "";
+  document.getElementById("stripe-whsec").value = "";
+  window._stripePublishableKey = undefined;
+  updateStripeIndicator();
+  updateCliBlock();
+}
+
+function updateStripeIndicator() {
+  const pk    = document.getElementById("stripe-pk")?.value.trim()    || "";
+  const sk    = document.getElementById("stripe-sk")?.value.trim()    || "";
+  const whsec = document.getElementById("stripe-whsec")?.value.trim() || "";
+  const dot   = document.getElementById("stripe-indicator");
+  const badge = document.getElementById("stripe-status-badge");
+  const allSet = pk && sk && whsec;
+  const anySet = pk || sk || whsec;
+  if (dot) dot.style.background  = allSet ? "var(--green)" : anySet ? "#F59E0B" : "#6B7280";
+  if (badge) {
+    badge.textContent  = allSet ? "✅ Configured" : anySet ? "⚠ Partial" : "Not Configured";
+    badge.className    = "badge " + (allSet ? "active" : anySet ? "seller" : "banned");
+  }
+}
+
+function updateCliBlock() {
+  const sk    = document.getElementById("stripe-sk")?.value.trim()    || "YOUR_SK_KEY";
+  const whsec = document.getElementById("stripe-whsec")?.value.trim() || "YOUR_WHSEC";
+  const masked_sk    = sk.length > 20    ? sk.slice(0,12) + "…" + sk.slice(-4)    : sk;
+  const masked_whsec = whsec.length > 16 ? whsec.slice(0,12) + "…" + whsec.slice(-4) : whsec;
+  const block = document.getElementById("stripe-cli-block");
+  if (block) block.textContent =
+`supabase link --project-ref zddsiwltiovntwlawjtd
+supabase secrets set STRIPE_SECRET_KEY=${masked_sk}
+supabase secrets set STRIPE_WEBHOOK_SECRET=${masked_whsec}
+supabase functions deploy create-checkout
+supabase functions deploy stripe-webhook`;
+}
+
+async function pasteKey(inputId) {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById(inputId).value = text.trim();
+    updateStripeIndicator();
+    updateCliBlock();
+  } catch { alert("Clipboard access denied — please paste manually."); }
+}
+
+function toggleSkVisibility() {
+  const el = document.getElementById("stripe-sk");
+  const btn = el.nextElementSibling;
+  if (el.type === "password") { el.type = "text"; btn.textContent = "Hide"; }
+  else { el.type = "password"; btn.textContent = "Show"; }
+}
+
+function toggleWhsecVisibility() {
+  const el = document.getElementById("stripe-whsec");
+  const btn = el.nextElementSibling;
+  if (el.type === "password") { el.type = "text"; btn.textContent = "Hide"; }
+  else { el.type = "password"; btn.textContent = "Show"; }
+}
+
+async function copyCliBlock() {
+  const sk    = document.getElementById("stripe-sk")?.value.trim() || "YOUR_SK_KEY";
+  const whsec = document.getElementById("stripe-whsec")?.value.trim() || "YOUR_WHSEC";
+  const text =
+`supabase link --project-ref zddsiwltiovntwlawjtd
+supabase secrets set STRIPE_SECRET_KEY=${sk}
+supabase secrets set STRIPE_WEBHOOK_SECRET=${whsec}
+supabase functions deploy create-checkout
+supabase functions deploy stripe-webhook`;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.querySelector('[onclick="copyCliBlock()"]');
+    btn.textContent = "✅ Copied!";
+    setTimeout(() => { btn.textContent = "📋 Copy Commands"; }, 2000);
+  } catch { alert(text); }
+}
+
+// ── OAuth / Social Login Settings ────────────────────────────────────
+const OAUTH_STORAGE_KEY = "bm_oauth_keys";
+
+function loadOAuthKeys() {
+  try {
+    const s = localStorage.getItem(OAUTH_STORAGE_KEY);
+    if (!s) { updateOAuthStatus(); return; }
+    const k = JSON.parse(s);
+    if (k.googleClientId)     document.getElementById("google-client-id").value     = k.googleClientId;
+    if (k.googleClientSecret) document.getElementById("google-client-secret").value = k.googleClientSecret;
+    if (k.appleClientId)      document.getElementById("apple-client-id").value      = k.appleClientId;
+    if (k.appleTeamId)        document.getElementById("apple-team-id").value        = k.appleTeamId;
+    if (k.appleKeyId)         document.getElementById("apple-key-id").value         = k.appleKeyId;
+    if (k.applePrivateKey)    document.getElementById("apple-private-key").value    = k.applePrivateKey;
+  } catch { localStorage.removeItem(OAUTH_STORAGE_KEY); }
+  updateOAuthStatus();
+}
+
+function saveOAuthKeys() {
+  const keys = {
+    googleClientId:     document.getElementById("google-client-id").value.trim(),
+    googleClientSecret: document.getElementById("google-client-secret").value.trim(),
+    appleClientId:      document.getElementById("apple-client-id").value.trim(),
+    appleTeamId:        document.getElementById("apple-team-id").value.trim(),
+    appleKeyId:         document.getElementById("apple-key-id").value.trim(),
+    applePrivateKey:    document.getElementById("apple-private-key").value.trim(),
+  };
+  localStorage.setItem(OAUTH_STORAGE_KEY, JSON.stringify(keys));
+  updateOAuthStatus();
+  const btn = document.querySelector('[onclick="saveOAuthKeys()"]');
+  const orig = btn.textContent;
+  btn.textContent = "✅ Saved!";
+  setTimeout(() => { btn.textContent = orig; }, 2000);
+}
+
+function clearOAuthKeys() {
+  if (!confirm("Clear all saved OAuth credentials?")) return;
+  localStorage.removeItem(OAUTH_STORAGE_KEY);
+  ["google-client-id","google-client-secret","apple-client-id","apple-team-id","apple-key-id","apple-private-key"]
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  updateOAuthStatus();
+  showOAuthResult("Credentials cleared.", false);
+}
+
+function updateOAuthStatus() {
+  const gId  = document.getElementById("google-client-id")?.value.trim();
+  const gSec = document.getElementById("google-client-secret")?.value.trim();
+  const aId  = document.getElementById("apple-client-id")?.value.trim();
+
+  const googleOk = !!(gId && gSec);
+  const appleOk  = !!aId;
+
+  const gBadge = document.getElementById("google-badge");
+  const aBadge = document.getElementById("apple-badge");
+  const oBadge = document.getElementById("oauth-status-badge");
+
+  if (gBadge) {
+    gBadge.textContent = googleOk ? "✅ Ready" : "Not configured";
+    gBadge.className   = "badge " + (googleOk ? "active" : "banned");
+  }
+  if (aBadge) {
+    aBadge.textContent = appleOk ? "✅ Ready" : "Not configured";
+    aBadge.className   = "badge " + (appleOk ? "active" : "banned");
+  }
+  if (oBadge) {
+    const both = googleOk && appleOk;
+    const any  = googleOk || appleOk;
+    oBadge.textContent = both ? "✅ All configured" : any ? "⚠ Partial" : "Not configured";
+    oBadge.className   = "badge " + (both ? "active" : any ? "seller" : "banned");
+  }
+}
+
+function showOAuthResult(msg, isSuccess) {
+  const el = document.getElementById("oauth-result");
+  el.textContent = msg;
+  el.style.display = "block";
+  el.style.background = isSuccess ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)";
+  el.style.border     = isSuccess ? "1px solid rgba(16,185,129,0.25)" : "1px solid rgba(239,68,68,0.25)";
+  el.style.color      = isSuccess ? "#6ee7b7" : "#fca5a5";
+  setTimeout(() => { el.style.display = "none"; }, 5000);
+}
+
+async function applyOAuthToSupabase() {
+  const gId  = document.getElementById("google-client-id").value.trim();
+  const gSec = document.getElementById("google-client-secret").value.trim();
+  const aId  = document.getElementById("apple-client-id").value.trim();
+  const aTeam = document.getElementById("apple-team-id").value.trim();
+  const aKey  = document.getElementById("apple-key-id").value.trim();
+  const aPriv = document.getElementById("apple-private-key").value.trim();
+
+  if (!gId && !aId) {
+    showOAuthResult("⚠ Enter at least Google Client ID + Secret first.", false);
+    return;
+  }
+
+  const btn = document.querySelector('[onclick="applyOAuthToSupabase()"]');
+  btn.disabled = true;
+  btn.textContent = "⏳ Configuring…";
+
+  // Save first
+  saveOAuthKeys();
+
+  const body = {};
+  if (gId && gSec) {
+    body.external_google_enabled   = true;
+    body.external_google_client_id = gId;
+    body.external_google_secret    = gSec;
+  }
+  if (aId) {
+    body.external_apple_enabled       = true;
+    body.external_apple_client_id     = aId;
+    body.external_apple_secret        = aPriv;
+    body.external_apple_key_id        = aKey;
+    body.external_apple_team_id       = aTeam;
+  }
+  // Also add redirect URL
+  body.additional_redirect_urls = [
+    window.location.origin + "/oauth-callback.html",
+    "http://192.168.1.93:8080/oauth-callback.html",
+  ].join(",");
+
+  try {
+    const res = await fetch(
+      "https://api.supabase.com/v1/projects/zddsiwltiovntwlawjtd/config/auth",
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + SUPABASE_SECRET,
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (res.ok) {
+      showOAuthResult("🚀 Supabase configured! Google/Apple login is now live. Test it on the login page.", true);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      // Supabase Management API needs a Personal Access Token — show instructions
+      showOAuthResult(`⚠ Auto-configure needs a PAT. Open → Supabase Auth Providers and paste the credentials manually. (${err.message || res.status})`, false);
+    }
+  } catch (e) {
+    showOAuthResult("⚠ Network error. Paste the credentials manually in Supabase Auth Providers.", false);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "🚀 Configure Supabase";
+}
+
+async function pasteField(inputId) {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById(inputId).value = text.trim();
+    updateOAuthStatus();
+  } catch { alert("Clipboard access denied — please paste manually."); }
+}
+
+function toggleFieldVisibility(inputId, btn) {
+  const el = document.getElementById(inputId);
+  if (el.type === "password") { el.type = "text"; btn.textContent = "Hide"; }
+  else { el.type = "password"; btn.textContent = "Show"; }
+}
+
+async function copyOAuthRedirect() {
+  const uri = "https://zddsiwltiovntwlawjtd.supabase.co/auth/v1/callback";
+  try {
+    await navigator.clipboard.writeText(uri);
+    const btn = document.querySelector('[onclick="copyOAuthRedirect()"]');
+    btn.textContent = "✅ Copied!";
+    setTimeout(() => { btn.textContent = "📋 Copy"; }, 2000);
+  } catch { alert(uri); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+(async () => {
+  showSection("overview");
+  await Promise.all([loadUsers(), loadAdminBeats(), loadModeration(), loadOrders(), loadStats()]);
+  loadStripeKeys();
+  loadOAuthKeys(); // load OAuth keys from localStorage
+})();
+
+</script>
+</body>
+</html>

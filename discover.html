@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Discover Beats — BeatMarket</title>
+  <meta name="description" content="Swipe through beats TikTok-style. Find your next hit on BeatMarket.">
+  <meta name="theme-color" content="#000000">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://supabase.co">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #7C3AED;
+      --purple-light: #a855f7;
+      --green: #10B981;
+      --red: #EF4444;
+      --gold: #F59E0B;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+      overscroll-behavior: none;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       TOP NAVBAR
+    ══════════════════════════════════════════════════════ */
+    .top-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding-top: var(--safe-top);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding-left: 1rem; padding-right: 1rem;
+      padding-bottom: 0.5rem;
+      padding-top: calc(var(--safe-top) + 0.5rem);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .top-nav-btn {
+      pointer-events: all;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 50px;
+      color: #fff; font-family: inherit;
+      font-size: 0.8rem; font-weight: 700;
+      padding: 0.45rem 1rem;
+      text-decoration: none; cursor: pointer;
+      display: flex; align-items: center; gap: 0.3rem;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: all 0.18s; white-space: nowrap;
+    }
+    .top-nav-btn:active { transform: scale(0.94); background: rgba(255,255,255,0.22); }
+    .top-nav-center {
+      display: flex; flex-direction: column; align-items: center;
+      pointer-events: none;
+    }
+    .top-nav-title { font-weight: 800; font-size: 0.88rem; letter-spacing: 0.02em; }
+    #beat-counter { font-size: 0.65rem; color: rgba(255,255,255,0.45); margin-top: 1px; }
+
+    /* ══════════════════════════════════════════════════════
+       FEED SCROLL CONTAINER
+    ══════════════════════════════════════════════════════ */
+    #feed {
+      width: 100%; height: 100dvh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    #feed::-webkit-scrollbar { display: none; }
+
+    /* ══════════════════════════════════════════════════════
+       BEAT SLIDE
+    ══════════════════════════════════════════════════════ */
+    .beat-slide {
+      width: 100%; height: 100dvh;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Blurred BG */
+    .slide-bg {
+      position: absolute; inset: -30px;
+      background-size: cover; background-position: center;
+      filter: blur(40px) brightness(0.28) saturate(1.6);
+      transform: scale(1.15);
+    }
+    .slide-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        rgba(0,0,0,0.4) 0%,
+        rgba(0,0,0,0.0) 20%,
+        rgba(0,0,0,0.0) 50%,
+        rgba(0,0,0,0.5) 75%,
+        rgba(0,0,0,0.92) 100%
+      );
+    }
+
+    /* ── Vinyl record ─────────────────────────────────────── */
+    .vinyl-wrap {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .vinyl-disc {
+      width: min(62vw, 260px);
+      height: min(62vw, 260px);
+      border-radius: 50%;
+      position: relative;
+      box-shadow:
+        0 0 0 2px rgba(255,255,255,0.08),
+        0 20px 80px rgba(0,0,0,0.8),
+        0 0 60px rgba(124,58,237,0.15);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .vinyl-disc.spinning {
+      animation: vinylSpin 3s linear infinite;
+    }
+    @keyframes vinylSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .vinyl-cover-img {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Vinyl groove overlay */
+    .vinyl-grooves {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(
+        rgba(0,0,0,0) 0deg,
+        rgba(0,0,0,0.04) 2deg,
+        rgba(0,0,0,0) 4deg
+      );
+      background-size: cover;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+    /* Shiny reflection */
+    .vinyl-shine {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: linear-gradient(135deg,
+        rgba(255,255,255,0.18) 0%,
+        transparent 40%,
+        rgba(255,255,255,0.04) 60%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+    /* Center label */
+    .vinyl-label {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 32%; height: 32%;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.7);
+      border: 2px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .vinyl-label::after {
+      content: '';
+      width: 30%; height: 30%;
+      border-radius: 50%;
+      background: #111;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.15);
+    }
+
+    /* Double-tap flash */
+    .dtap-heart {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 4rem;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      transition: none;
+    }
+    .dtap-heart.pop {
+      animation: heartPop 0.7s ease-out forwards;
+    }
+    @keyframes heartPop {
+      0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+      30%  { transform: translate(-50%,-50%) scale(1.4); opacity: 1; }
+      70%  { transform: translate(-50%,-50%) scale(1.1); opacity: 0.9; }
+      100% { transform: translate(-50%,-55%) scale(1); opacity: 0; }
+    }
+
+    /* Floating like hearts */
+    .float-heart {
+      position: fixed;
+      pointer-events: none; z-index: 999;
+      font-size: 1.6rem;
+      animation: floatUp 1.2s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-120px) scale(0.4); opacity: 0; }
+    }
+
+    /* ── Producer row ─────────────────────────────────────── */
+    .producer-row {
+      position: relative; z-index: 3;
+      display: flex; align-items: center; gap: 0.65rem;
+      margin-bottom: 0.85rem;
+    }
+    .producer-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,#7C3AED,#ec4899);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .producer-name-wrap { flex: 1; min-width: 0; }
+    .producer-name {
+      font-size: 0.85rem; font-weight: 700;
+      display: flex; align-items: center; gap: 0.3rem;
+    }
+    .verified-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px;
+      background: var(--purple); border-radius: 50%;
+      font-size: 0.55rem; flex-shrink: 0;
+    }
+    .producer-tag { font-size: 0.68rem; color: rgba(255,255,255,0.4); }
+
+    .follow-btn {
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      border: 1.5px solid rgba(255,255,255,0.7);
+      background: transparent; color: #fff;
+      font-family: inherit; font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; transition: all 0.18s; flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .follow-btn.following {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* ══════════════════════════════════════════════════════
+       BOTTOM INFO PANEL
+    ══════════════════════════════════════════════════════ */
+    .slide-info {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      z-index: 4;
+      padding: 0 1rem;
+      padding-right: 4.5rem;  /* leave room for sidebar buttons */
+      padding-bottom: calc(var(--safe-bottom) + 1.25rem);
+    }
+
+    .slide-tags {
+      display: flex; flex-wrap: wrap; gap: 0.35rem;
+      margin-bottom: 0.55rem;
+    }
+    .slide-tag {
+      font-size: 0.68rem; font-weight: 700;
+      padding: 0.18rem 0.5rem; border-radius: 20px;
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.45);
+      color: var(--purple-light);
+    }
+    .tag-genre { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.35); color: var(--green); }
+    .tag-bpm   { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: var(--gold); }
+    .tag-new   { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.4); color: #f87171; }
+
+    .slide-title {
+      font-size: clamp(1.3rem, 5.5vw, 1.9rem);
+      font-weight: 900; letter-spacing: -0.5px; line-height: 1.15;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+      margin-bottom: 0.3rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Progress + time row */
+    .slide-playbar {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin: 0.85rem 0 0.9rem;
+    }
+    .slide-time {
+      font-size: 0.72rem; font-weight: 600;
+      color: rgba(255,255,255,0.55);
+      white-space: nowrap; min-width: 55px;
+    }
+    .slide-progress-track {
+      flex: 1; height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px; cursor: pointer;
+      position: relative; overflow: hidden;
+    }
+    .slide-progress-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: linear-gradient(to right, var(--purple), var(--purple-light));
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.35s linear;
+    }
+    .slide-time-right {
+      font-size: 0.72rem; font-weight: 600;
+      color: rgba(255,255,255,0.35); white-space: nowrap;
+    }
+
+    /* Buy button */
+    .btn-buy-now {
+      width: 100%; padding: 0.9rem;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+      border: none; color: #fff;
+      font-family: inherit; font-size: 0.9rem; font-weight: 800;
+      cursor: pointer; transition: all 0.18s;
+      box-shadow: 0 4px 24px rgba(124,58,237,0.45);
+      -webkit-tap-highlight-color: transparent;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .btn-buy-now:active { transform: scale(0.98); }
+    .btn-buy-price {
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px; padding: 0.2rem 0.55rem;
+      font-size: 0.85rem; font-weight: 900;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       RIGHT SIDEBAR ACTIONS
+    ══════════════════════════════════════════════════════ */
+    .slide-sidebar {
+      position: absolute; right: 0.85rem;
+      bottom: calc(var(--safe-bottom) + 13rem); /* raised so Cart clears the producer/follow row */
+      z-index: 5;
+      display: flex; flex-direction: column; align-items: center; gap: 1.2rem;
+    }
+    .sa-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .sa-btn {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; transition: all 0.18s; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+    }
+    .sa-btn:active  { transform: scale(0.85); }
+    .sa-btn.liked   { background: rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.55); }
+    .sa-btn.in-cart { background: rgba(16,185,129,0.25); border-color: rgba(16,185,129,0.5); }
+    .sa-label {
+      font-size: 0.62rem; font-weight: 700;
+      color: rgba(255,255,255,0.75);
+      text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    /* Mute button top-right */
+    .mute-btn {
+      position: absolute; right: 0.85rem;
+      top: calc(var(--safe-top) + 3.5rem);
+      z-index: 100;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.45);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      color: #fff; font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.18s;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       waveform (inside vinyl area)
+    ══════════════════════════════════════════════════════ */
+    .slide-waveform {
+      display: flex; align-items: flex-end; gap: 2.5px;
+      height: 28px; position: relative; z-index: 2;
+    }
+    .wbar {
+      width: 3px; border-radius: 2px;
+      background: rgba(255,255,255,0.35);
+      transition: background 0.3s;
+    }
+    .slide-waveform.playing .wbar {
+      background: var(--purple-light);
+      animation: wave var(--d,0.7s) ease-in-out infinite alternate;
+    }
+    @keyframes wave { from { transform: scaleY(0.15); } to { transform: scaleY(1); } }
+
+    /* ══════════════════════════════════════════════════════
+       PREVIEW END BANNER
+    ══════════════════════════════════════════════════════ */
+    .preview-banner {
+      display: none;
+      position: absolute; inset: 0; z-index: 20;
+      background: rgba(0,0,0,0.78);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.1rem; padding: 2rem 1.5rem; text-align: center;
+    }
+    .preview-banner.show { display: flex; }
+    .preview-banner h2 { font-size: 1.5rem; font-weight: 900; }
+    .preview-banner p  { font-size: 0.88rem; color: rgba(255,255,255,0.55); line-height: 1.55; }
+    .preview-countdown {
+      font-size: 0.8rem; font-weight: 700;
+      color: rgba(255,255,255,0.4);
+    }
+    .preview-countdown span { color: var(--purple-light); }
+    .btn-get-license {
+      width: 100%; max-width: 300px;
+      padding: 1rem; border-radius: 14px;
+      background: linear-gradient(135deg,#7c3aed,#a855f7);
+      color: #fff; font-weight: 800; font-size: 0.95rem;
+      border: none; cursor: pointer;
+      box-shadow: 0 6px 28px rgba(124,58,237,0.5);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-replay { 
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.65); font-size: 0.85rem;
+      border-radius: 12px; padding: 0.65rem 1.75rem;
+      cursor: pointer; font-family: inherit; font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       SKELETON LOADING
+    ══════════════════════════════════════════════════════ */
+    .skeleton-slide {
+      width: 100%; height: 100dvh;
+      scroll-snap-align: start;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1.25rem; background: #0a0a10;
+    }
+    .sk { background: rgba(255,255,255,0.07); border-radius: 12px; animation: skPulse 1.4s ease-in-out infinite; }
+    .sk-circle { border-radius: 50% !important; }
+    @keyframes skPulse { 0%,100%{opacity:0.5}50%{opacity:1} }
+
+    /* ══════════════════════════════════════════════════════
+       SCROLL HINT
+    ══════════════════════════════════════════════════════ */
+    .scroll-hint {
+      position: fixed; bottom: calc(var(--safe-bottom) + 1.25rem);
+      left: 50%; transform: translateX(-50%);
+      z-index: 50; pointer-events: none;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      animation: hintBounce 1.4s ease-in-out infinite;
+      opacity: 0; transition: opacity 0.5s;
+    }
+    .scroll-hint.visible { opacity: 0.65; }
+    @keyframes hintBounce {
+      0%,100%{ transform:translateX(-50%) translateY(0); }
+      50%    { transform:translateX(-50%) translateY(-7px); }
+    }
+    .hint-chevrons { display: flex; flex-direction: column; align-items: center; line-height: 0.95; font-size: 1rem; }
+    .hint-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); }
+
+    /* ══════════════════════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════════════════════ */
+    #toast {
+      position: fixed; top: calc(var(--safe-top) + 4rem); left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: rgba(15,15,22,0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px; padding: 0.5rem 1.1rem;
+      font-size: 0.82rem; font-weight: 600; color: #fff;
+      white-space: nowrap; z-index: 999; opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none; backdrop-filter: blur(14px);
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ══════════════════════════════════════════════════════
+       DESKTOP ADJUSTMENTS
+    ══════════════════════════════════════════════════════ */
+    @media (min-width: 600px) {
+      .beat-slide { align-items: center; }
+      .slide-info { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 100%; padding-right: 4.5rem; }
+      .slide-sidebar { right: calc(50% - 280px); }
+      .vinyl-disc { width: 280px; height: 280px; }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       MOBILE / SHORT SCREEN RESPONSIVE
+    ══════════════════════════════════════════════════════ */
+
+    /* Standard iPhone (812px and shorter) */
+    @media (max-height: 812px) {
+      .vinyl-disc { width: min(56vw, 240px); height: min(56vw, 240px); }
+      .vinyl-wrap { margin-bottom: 1rem; }
+      .slide-sidebar { gap: 1rem; bottom: calc(var(--safe-bottom) + 13rem); }
+      .sa-btn { width: 48px; height: 48px; font-size: 1.3rem; }
+    }
+
+    /* iPhone SE / Android compact (≤ 736px tall) */
+    @media (max-height: 736px) {
+      .vinyl-disc { width: min(50vw, 210px); height: min(50vw, 210px); }
+      .vinyl-wrap { margin-bottom: 0.65rem; }
+      .slide-sidebar { gap: 0.85rem; bottom: calc(var(--safe-bottom) + 12.5rem); }
+      .sa-btn { width: 44px; height: 44px; font-size: 1.2rem; }
+      .sa-label { font-size: 0.58rem; }
+      .slide-title { font-size: clamp(1.1rem, 5vw, 1.6rem); margin-bottom: 0.2rem; }
+      .slide-tags { margin-bottom: 0.35rem; }
+      .slide-playbar { margin: 0.6rem 0 0.7rem; }
+    }
+
+    /* Very small phones (≤ 667px - iPhone SE 1st gen, Moto G) */
+    @media (max-height: 667px) {
+      .vinyl-disc { width: min(44vw, 180px); height: min(44vw, 180px); }
+      .vinyl-wrap { margin-bottom: 0.4rem; }
+      .slide-waveform { height: 20px; margin-bottom: 0.5rem; }
+      .slide-sidebar { gap: 0.65rem; bottom: calc(var(--safe-bottom) + 11.5rem); }
+      .sa-btn { width: 40px; height: 40px; font-size: 1.1rem; }
+      .sa-label { font-size: 0.55rem; }
+      .slide-title { font-size: clamp(1rem, 4.5vw, 1.4rem); }
+      .slide-tags { margin-bottom: 0.25rem; gap: 0.25rem; }
+      .slide-playbar { margin: 0.45rem 0 0.55rem; }
+      .btn-buy-now { padding: 0.7rem 0.9rem; font-size: 0.83rem; }
+      .producer-row { margin-bottom: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Floating hearts container -->
+<div id="hearts-container"></div>
+
+<!-- Top nav -->
+<div class="top-nav">
+  <a href="index.html" class="top-nav-btn">← Back</a>
+  <div class="top-nav-center">
+    <div class="top-nav-title">🎵 Discover</div>
+    <div id="beat-counter">Loading…</div>
+  </div>
+  <a href="login.html" class="top-nav-btn" id="nav-user-btn">Sign In</a>
+</div>
+
+<!-- Mute button -->
+<button class="mute-btn" id="mute-btn" title="Toggle mute">🔊</button>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Scroll hint -->
+<div class="scroll-hint" id="scroll-hint">
+  <div class="hint-chevrons">∧<br>∧</div>
+  <div class="hint-label">SWIPE UP</div>
+</div>
+
+<!-- Feed -->
+<div id="feed">
+  <!-- Skeleton loading -->
+  <div class="skeleton-slide">
+    <div class="sk sk-circle" style="width:220px;height:220px"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:70%">
+      <div class="sk" style="width:80%;height:18px"></div>
+      <div class="sk" style="width:55%;height:14px"></div>
+      <div class="sk" style="width:100%;height:46px;border-radius:14px;margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" crossorigin></script>
+<script src="js/supabase.js?v=1"></script>
+<script src="js/auth.js?v=1"></script>
+<script src="js/api.js?v=8"></script>
+<script>
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+const PREVIEW_SEC = 30;
+let beats       = [];
+let currentIdx  = -1;
+let audio       = new Audio();
+let isPlaying   = false;
+let isMuted     = false;
+let previewDone = false;
+let progressRAF = null;
+let advanceTimer= null;
+let likes       = JSON.parse(localStorage.getItem('bm_likes')      || '{}');
+let followed    = JSON.parse(localStorage.getItem('bm_followed')    || '{}');
+let cart        = JSON.parse(localStorage.getItem('bm_cart_ids')    || '{}');
+let tapTimers   = {};
+const session   = Auth.getSession();
+
+// Update nav user button
+if (session) {
+  const btn = document.getElementById('nav-user-btn');
+  btn.textContent = (session.name || 'Me').split(' ')[0];
+  btn.href = session.role === 'seller' ? 'seller.html' :
+             session.role === 'admin'  ? 'admin.html' : 'buyer.html';
+}
+
+// Mute toggle
+document.getElementById('mute-btn').addEventListener('click', () => {
+  isMuted = !isMuted;
+  audio.muted = isMuted;
+  document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊';
+});
+
+// ════════════════════════════════════════════════════════
+//  LOAD BEATS
+// ════════════════════════════════════════════════════════
+async function loadBeats() {
+  beats = await API.getBeats();
+  beats = beats.sort(() => Math.random() - 0.5);
+  renderFeed();
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER FEED
+// ════════════════════════════════════════════════════════
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = beats.map((b, i) => buildSlide(b, i)).join('') +
+    `<div class="skeleton-slide" style="font-size:0.9rem;color:rgba(255,255,255,0.25);gap:0.5rem">
+       <div style="font-size:2.5rem">🎵</div>
+       <div>You've heard them all</div>
+       <a href="index.html" style="color:var(--purple-light);font-weight:700;font-size:0.85rem">Browse full catalog →</a>
+     </div>`;
+
+  // Counter
+  document.getElementById('beat-counter').textContent = `1 of ${beats.length}`;
+
+  // IntersectionObserver — auto-play on enter
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.intersectionRatio >= 0.55) {
+        const idx = parseInt(e.target.dataset.idx);
+        if (!isNaN(idx)) switchTo(idx);
+      }
+    });
+  }, { threshold: 0.55 });
+
+  feed.querySelectorAll('.beat-slide').forEach(el => obs.observe(el));
+
+  // Hide scroll hint after first swipe
+  setTimeout(() => {
+    const hint = document.getElementById('scroll-hint');
+    hint.classList.add('visible');
+    feed.addEventListener('scroll', () => hint.classList.remove('visible'), { once: true });
+  }, 1200);
+}
+
+// ════════════════════════════════════════════════════════
+//  BUILD SLIDE HTML
+// ════════════════════════════════════════════════════════
+function buildSlide(beat, i) {
+  const wbars = Array.from({length:22}, (_, j) => {
+    const h = 6 + Math.abs(Math.sin(j * 0.65 + i * 0.4)) * 20;
+    const d = (0.45 + Math.random() * 0.55).toFixed(2);
+    return `<div class="wbar" style="height:${h}px;transform-origin:bottom;--d:${d}s"></div>`;
+  }).join('');
+
+  const tags = (Array.isArray(beat.tags) ? beat.tags : []).slice(0,3);
+  const tagHtml = tags.map(t => `<span class="slide-tag">${t}</span>`).join('');
+  const isNew   = beat.createdAt && (Date.now() - new Date(beat.createdAt)) < 7 * 86400000;
+  const initials= (beat.producer || 'P').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const isLiked = !!likes[beat.id];
+  const inCart  = !!cart[beat.id];
+  const isFollowed = !!followed[beat.producer];
+
+  return `
+  <div class="beat-slide" data-idx="${i}" data-id="${beat.id}" id="slide-${i}">
+
+    <!-- Blurred BG -->
+    <div class="slide-bg" style="background-image:url('${beat.cover||''}')" id="bg-${i}"></div>
+
+    <!-- VINYL -->
+    <div class="vinyl-wrap" style="position:relative;z-index:2">
+      <div class="vinyl-disc" id="vinyl-${i}" onclick="tapVinyl(${i})" style="position:relative">
+        <img class="vinyl-cover-img" src="${beat.cover||''}" alt="${beat.title}"
+          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%231a0a2e%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2240%22%3E🎵%3C/text%3E%3C/svg%3E'">
+        <div class="vinyl-grooves"></div>
+        <div class="vinyl-shine"></div>
+        <div class="vinyl-label"></div>
+        <!-- Double-tap heart -->
+        <div class="dtap-heart" id="dtap-${i}">❤️</div>
+      </div>
+    </div>
+
+    <!-- Waveform -->
+    <div class="slide-waveform" id="wave-${i}" style="position:relative;z-index:2;margin-bottom:1rem">${wbars}</div>
+
+    <!-- Right sidebar -->
+    <div class="slide-sidebar">
+      <!-- Like -->
+      <div class="sa-item" onclick="toggleLike(${i})">
+        <div class="sa-btn ${isLiked?'liked':''}" id="like-btn-${i}">${isLiked?'❤️':'🩶'}</div>
+        <div class="sa-label" id="like-lbl-${i}">${fmtNum(beat.likes||beat.likes_count||0)}</div>
+      </div>
+      <!-- Plays/views -->
+      <div class="sa-item">
+        <div class="sa-btn" style="cursor:default">👁</div>
+        <div class="sa-label">${fmtNum(beat.plays ? beat.plays*3 : Math.floor(Math.random()*50000+1000))}</div>
+      </div>
+      <!-- Share -->
+      <div class="sa-item" onclick="shareSlide(${i})">
+        <div class="sa-btn">🔗</div>
+        <div class="sa-label">Share</div>
+      </div>
+      <!-- Cart -->
+      <div class="sa-item" onclick="addToCart(${i})">
+        <div class="sa-btn ${inCart?'in-cart':''}" id="cart-btn-${i}">${inCart?'✅':'🛒'}</div>
+        <div class="sa-label">${inCart?'Added':'Cart'}</div>
+      </div>
+    </div>
+
+    <!-- Bottom info -->
+    <div class="slide-info">
+
+      <!-- Producer row -->
+      <div class="producer-row">
+        <div class="producer-avatar">${initials}</div>
+        <div class="producer-name-wrap">
+          <div class="producer-name">
+            ${beat.producer||'Producer'}
+            ${beat.verified ? '<span class="verified-badge">✓</span>' : ''}
+          </div>
+          <div class="producer-tag">Beat Maker</div>
+        </div>
+        <button class="follow-btn ${isFollowed?'following':''}" id="follow-btn-${i}"
+          onclick="toggleFollow(${i})">
+          ${isFollowed?'Following':'+ Follow'}
+        </button>
+      </div>
+
+      <!-- Tags -->
+      <div class="slide-tags">
+        <span class="slide-tag tag-genre">${beat.genre||'Beat'}</span>
+        ${tagHtml}
+        ${beat.bpm  ? `<span class="slide-tag tag-bpm">${beat.bpm} BPM</span>` : ''}
+        ${beat.key  ? `<span class="slide-tag">${beat.key}</span>` : ''}
+        ${isNew     ? '<span class="slide-tag tag-new">🆕 NEW</span>' : ''}
+      </div>
+
+      <!-- Title -->
+      <div class="slide-title">${beat.title}</div>
+
+      <!-- Progress bar + time -->
+      <div class="slide-playbar">
+        <div class="slide-time" id="time-${i}">0:00</div>
+        <div class="slide-progress-track" id="track-${i}" onclick="seekSlide(event,${i})">
+          <div class="slide-progress-fill" id="prog-${i}"></div>
+        </div>
+        <div class="slide-time-right">0:30</div>
+      </div>
+
+      <!-- Buy button -->
+      <button class="btn-buy-now" onclick="buyNow(${i})">
+        <span>🛒 Get Full License</span>
+        <span class="btn-buy-price">from $${parseFloat(beat.price||0).toFixed(2)}</span>
+      </button>
+    </div>
+
+    <!-- 30s Preview ended overlay -->
+    <div class="preview-banner" id="pbanner-${i}">
+      <div style="font-size:3rem">🎵</div>
+      <h2>Preview Ended</h2>
+      <p>You've heard 30 seconds of "<strong>${beat.title}</strong>".<br>Get the full beat with a license.</p>
+      <div class="preview-countdown" id="pcount-${i}" style="display:none">
+        Next beat in <span id="pnum-${i}">5</span>s…
+      </div>
+      <button class="btn-get-license" onclick="buyNow(${i})">
+        🛒 Get License — from $${parseFloat(beat.price||0).toFixed(2)}
+      </button>
+      <button class="btn-replay" onclick="replaySlide(${i})">▶ Replay 30s</button>
+      <button class="btn-replay" onclick="nextSlide()" style="margin-top:-0.5rem">⏭ Next Beat</button>
+    </div>
+
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  PLAYBACK ENGINE
+// ════════════════════════════════════════════════════════
+function switchTo(idx) {
+  if (idx === currentIdx) return;
+  stopCurrent();
+  currentIdx = idx;
+  document.getElementById('beat-counter').textContent = `${idx + 1} of ${beats.length}`;
+  playSlide(idx);
+}
+
+function stopCurrent() {
+  cancelAnimationFrame(progressRAF);
+  clearTimeout(advanceTimer);
+  audio.pause();
+  audio.src = '';
+  isPlaying  = false; previewDone = false;
+  document.querySelectorAll('.slide-waveform').forEach(w => w.classList.remove('playing'));
+  document.querySelectorAll('.vinyl-disc').forEach(v => v.classList.remove('spinning'));
+}
+
+function playSlide(idx) {
+  const beat = beats[idx];
+  if (!beat?.audio) return;
+
+  const banner = document.getElementById(`pbanner-${idx}`);
+  if (banner) banner.classList.remove('show');
+  resetProgress(idx);
+
+  audio = new Audio();
+  audio.src   = beat.audio;
+  audio.muted = isMuted;
+  audio.load();
+
+  audio.addEventListener('canplaythrough', () => {
+    audio.play().then(() => {
+      isPlaying = true;
+      document.getElementById(`wave-${idx}`)?.classList.add('playing');
+      document.getElementById(`vinyl-${idx}`)?.classList.add('spinning');
+      startProgress(idx);
+    }).catch(() => {});
+  }, { once: true });
+
+  audio.addEventListener('error', () => console.warn('Audio error for', beat.title));
+}
+
+function startProgress(idx) {
+  cancelAnimationFrame(progressRAF);
+  const fill  = document.getElementById(`prog-${idx}`);
+  const timer = document.getElementById(`time-${idx}`);
+
+  function tick() {
+    if (!isPlaying || !audio.duration) { progressRAF = requestAnimationFrame(tick); return; }
+    const t   = audio.currentTime;
+    const pct = Math.min(t / PREVIEW_SEC, 1) * 100;
+    if (fill)  fill.style.width = pct + '%';
+    if (timer) timer.textContent = fmtTime(t);
+
+    if (t >= PREVIEW_SEC && !previewDone) {
+      previewDone = true;
+      audio.pause();
+      isPlaying = false;
+      document.getElementById(`wave-${idx}`)?.classList.remove('playing');
+      document.getElementById(`vinyl-${idx}`)?.classList.remove('spinning');
+      document.getElementById(`pbanner-${idx}`)?.classList.add('show');
+      startAutoAdvance(idx);
+      return;
+    }
+    progressRAF = requestAnimationFrame(tick);
+  }
+  progressRAF = requestAnimationFrame(tick);
+}
+
+function resetProgress(idx) {
+  const fill  = document.getElementById(`prog-${idx}`);
+  const timer = document.getElementById(`time-${idx}`);
+  if (fill)  fill.style.width = '0%';
+  if (timer) timer.textContent = '0:00';
+}
+
+// Auto-advance countdown after preview ends
+function startAutoAdvance(idx) {
+  const countEl = document.getElementById(`pcount-${idx}`);
+  const numEl   = document.getElementById(`pnum-${idx}`);
+  if (!countEl || !numEl) return;
+  countEl.style.display = 'block';
+  let secs = 5;
+  numEl.textContent = secs;
+  advanceTimer = setInterval(() => {
+    secs--;
+    numEl.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(advanceTimer);
+      nextSlide();
+    }
+  }, 1000);
+}
+
+function nextSlide() {
+  clearInterval(advanceTimer);
+  const nextIdx = currentIdx + 1;
+  if (nextIdx >= beats.length) return;
+  const slides = document.querySelectorAll('.beat-slide');
+  slides[nextIdx]?.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Tap vinyl → toggle play; double-tap → like
+function tapVinyl(idx) {
+  const now = Date.now();
+  if (tapTimers[idx] && now - tapTimers[idx] < 350) {
+    // Double tap — like!
+    clearTimeout(tapTimers._timer);
+    delete tapTimers[idx];
+    if (!likes[beats[idx].id]) toggleLike(idx);
+    // Flash heart on vinyl
+    const h = document.getElementById(`dtap-${idx}`);
+    if (h) { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); }
+    return;
+  }
+  tapTimers[idx] = now;
+  tapTimers._timer = setTimeout(() => {
+    delete tapTimers[idx];
+    // Single tap — play/pause
+    togglePlay(idx);
+  }, 360);
+}
+
+function togglePlay(idx) {
+  if (idx !== currentIdx) { switchTo(idx); return; }
+  if (isPlaying) {
+    audio.pause(); isPlaying = false;
+    document.getElementById(`wave-${idx}`)?.classList.remove('playing');
+    document.getElementById(`vinyl-${idx}`)?.classList.remove('spinning');
+    cancelAnimationFrame(progressRAF);
+  } else {
+    if (previewDone || audio.currentTime >= PREVIEW_SEC) { replaySlide(idx); return; }
+    audio.play().catch(()=>{});
+    isPlaying = true;
+    document.getElementById(`wave-${idx}`)?.classList.add('playing');
+    document.getElementById(`vinyl-${idx}`)?.classList.add('spinning');
+    startProgress(idx);
+  }
+}
+
+function replaySlide(idx) {
+  clearInterval(advanceTimer);
+  previewDone = false;
+  document.getElementById(`pbanner-${idx}`)?.classList.remove('show');
+  const c = document.getElementById(`pcount-${idx}`);
+  if (c) c.style.display = 'none';
+  resetProgress(idx);
+  audio.currentTime = 0;
+  audio.play().then(() => {
+    isPlaying = true;
+    document.getElementById(`wave-${idx}`)?.classList.add('playing');
+    document.getElementById(`vinyl-${idx}`)?.classList.add('spinning');
+    startProgress(idx);
+  }).catch(()=>{});
+}
+
+function seekSlide(e, idx) {
+  if (idx !== currentIdx) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  audio.currentTime = pct * PREVIEW_SEC;
+}
+
+// ════════════════════════════════════════════════════════
+//  SOCIAL ACTIONS
+// ════════════════════════════════════════════════════════
+function toggleLike(idx) {
+  const beat = beats[idx]; if (!beat) return;
+  const id   = beat.id;
+  const wasLiked = !!likes[id];
+  wasLiked ? delete likes[id] : (likes[id] = true);
+  localStorage.setItem('bm_likes', JSON.stringify(likes));
+
+  const btn = document.getElementById(`like-btn-${idx}`);
+  const lbl = document.getElementById(`like-lbl-${idx}`);
+  if (btn) {
+    btn.textContent = wasLiked ? '🩶' : '❤️';
+    btn.classList.toggle('liked', !wasLiked);
+    btn.style.transform = 'scale(1.4)';
+    setTimeout(() => btn.style.transform = '', 280);
+  }
+  // Optimistic count update
+  if (lbl) {
+    const cur = beat.likes || beat.likes_count || 0;
+    const next = wasLiked ? Math.max(0, cur - 1) : cur + 1;
+    beat.likes = next;
+    lbl.textContent = fmtNum(next);
+  }
+  if (!wasLiked) spawnFloatingHearts();
+  showToast(wasLiked ? 'Removed like' : '❤️ Liked!');
+
+  // Persist to Supabase
+  API.toggleLike(id).then(res => {
+    if (res && res.likes_count !== undefined) {
+      beat.likes = res.likes_count;
+      if (lbl) lbl.textContent = fmtNum(res.likes_count);
+    }
+  }).catch(() => {});
+}
+
+function spawnFloatingHearts() {
+  const container = document.getElementById('hearts-container');
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      const h = document.createElement('div');
+      h.className = 'float-heart';
+      h.textContent = ['❤️','🧡','💜','💛','🩷'][Math.floor(Math.random()*5)];
+      h.style.cssText = `
+        right: ${60 + Math.random()*30}px;
+        bottom: ${150 + Math.random()*100}px;
+        font-size: ${1.2 + Math.random()*0.8}rem;
+      `;
+      container.appendChild(h);
+      setTimeout(() => h.remove(), 1300);
+    }, i * 100);
+  }
+}
+
+function toggleFollow(idx) {
+  const beat = beats[idx]; if (!beat) return;
+  const prod = beat.producer;
+  const prodId = beat.producerId || null;
+  const wasFollow = !!followed[prod];
+  wasFollow ? delete followed[prod] : (followed[prod] = true);
+  localStorage.setItem('bm_followed', JSON.stringify(followed));
+
+  const btn = document.getElementById(`follow-btn-${idx}`);
+  if (btn) {
+    btn.textContent = wasFollow ? '+ Follow' : 'Following';
+    btn.classList.toggle('following', !wasFollow);
+    if (!wasFollow) {
+      btn.style.transform = 'scale(1.15)';
+      setTimeout(() => btn.style.transform = '', 250);
+    }
+  }
+  showToast(wasFollow ? `Unfollowed ${prod}` : `✅ Following ${prod}`);
+
+  // Persist to Supabase if producer ID is a UUID
+  if (prodId && /^[0-9a-f]{8}-/.test(prodId)) {
+    API.toggleFollow(prodId).catch(() => {});
+  }
+}
+
+function addToCart(idx) {
+  const beat = beats[idx]; if (!beat) return;
+  const alreadyIn = !!cart[beat.id];
+  if (!alreadyIn) {
+    cart[beat.id] = { id: beat.id, title: beat.title, price: beat.price };
+    localStorage.setItem('bm_cart_ids', JSON.stringify(cart));
+  }
+  const btn = document.getElementById(`cart-btn-${idx}`);
+  const lbl = btn?.nextElementSibling;
+  if (btn) { btn.textContent = '✅'; btn.classList.add('in-cart'); }
+  if (lbl) lbl.textContent = 'Added';
+  showToast(alreadyIn ? 'Already in cart' : '🛒 Added to cart!');
+}
+
+function shareSlide(idx) {
+  const beat = beats[idx]; if (!beat) return;
+  const url  = `${location.origin}/index.html?beat=${beat.id}`;
+  if (navigator.share) {
+    navigator.share({ title: beat.title, text: `🎵 "${beat.title}" by ${beat.producer} on BeatMarket`, url }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(() => showToast('🔗 Link copied!')).catch(()=>{});
+  }
+}
+
+function buyNow(idx) {
+  const beat = beats[idx]; if (!beat) return;
+  window.location.href = `index.html?beat=${beat.id}`;
+}
+
+// ════════════════════════════════════════════════════════
+//  KEYBOARD (desktop)
+// ════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  const slides = document.querySelectorAll('.beat-slide');
+  if (e.key === 'ArrowDown') { e.preventDefault(); slides[Math.min(currentIdx+1,slides.length-1)]?.scrollIntoView({behavior:'smooth'}); }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); slides[Math.max(currentIdx-1,0)]?.scrollIntoView({behavior:'smooth'}); }
+  if (e.key === ' ')         { e.preventDefault(); togglePlay(currentIdx); }
+  if (e.key === 'm')         { document.getElementById('mute-btn').click(); }
+});
+
+// ════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════
+function fmtTime(s) {
+  const m = Math.floor(s/60);
+  return `${m}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+}
+function fmtNum(n) {
+  if (n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if (n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return String(n);
+}
+let toastTmr;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════
+loadBeats();
+</script>
+</body>
+</html>

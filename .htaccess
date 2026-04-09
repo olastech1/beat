@@ -1,0 +1,96 @@
+# ═══════════════════════════════════════════════════════════════
+#  BeatMarket — Apache Security Headers (.htaccess)
+#  Place this file in your public_html/ root on Hostinger
+# ═══════════════════════════════════════════════════════════════
+
+# ── 1. Force HTTPS ──────────────────────────────────────────────
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── 2. Prevent directory listing ────────────────────────────────
+Options -Indexes
+
+# ── 3. Security Headers ─────────────────────────────────────────
+<IfModule mod_headers.c>
+
+  # Prevent clickjacking — only allow framing from same origin
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Prevent MIME type sniffing
+  Header always set X-Content-Type-Options "nosniff"
+
+  # XSS protection (legacy browsers)
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # Referrer policy — don't leak URL to third parties
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Permissions policy — disable unused browser features
+  Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=(self), usb=()"
+
+  # HTTP Strict Transport Security — force HTTPS for 1 year
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+  # Content Security Policy — restrict resource origins
+  Header always set Content-Security-Policy "\
+    default-src 'self';\
+    script-src 'self' 'unsafe-inline' \
+      https://cdn.jsdelivr.net \
+      https://js.stripe.com \
+      https://fonts.googleapis.com;\
+    style-src 'self' 'unsafe-inline' \
+      https://fonts.googleapis.com;\
+    font-src 'self' \
+      https://fonts.gstatic.com;\
+    img-src 'self' data: blob: \
+      https://*.supabase.co \
+      https://zddsiwltiovntwlawjtd.supabase.co;\
+    connect-src 'self' \
+      https://*.supabase.co \
+      https://zddsiwltiovntwlawjtd.supabase.co \
+      https://api.stripe.com;\
+    frame-src https://js.stripe.com;\
+    object-src 'none';\
+    base-uri 'self';\
+    form-action 'self';"
+
+  # Remove server info headers (hide tech stack)
+  Header unset Server
+  Header unset X-Powered-By
+
+</IfModule>
+
+# ── 4. Protect sensitive files ───────────────────────────────────
+<FilesMatch "(\.env|\.git|supabase/.*\.sql|\.htaccess)">
+  Order Allow,Deny
+  Deny from all
+</FilesMatch>
+
+# ── 5. Block common attack patterns ─────────────────────────────
+<IfModule mod_rewrite.c>
+  # Block SQL injection attempts in URL
+  RewriteCond %{QUERY_STRING} (union|select|insert|drop|update|delete|exec|script) [NC,OR]
+  RewriteCond %{QUERY_STRING} (<|>|%3C|%3E) [NC,OR]
+  RewriteCond %{QUERY_STRING} (javascript:|vbscript:) [NC]
+  RewriteRule .* - [F,L]
+
+  # Block bad bots and scanners
+  RewriteCond %{HTTP_USER_AGENT} (sqlmap|nikto|nmap|masscan|ZGrab|zgrab) [NC]
+  RewriteRule .* - [F,L]
+</IfModule>
+
+# ── 6. Cache static assets ──────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType image/png "access plus 6 months"
+  ExpiresByType image/jpeg "access plus 6 months"
+  ExpiresByType image/webp "access plus 6 months"
+</IfModule>
+
+# ── 7. Compress responses ────────────────────────────────────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript text/plain
+</IfModule>
