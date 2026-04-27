@@ -744,9 +744,7 @@
 </main>
 
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-<script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script src="js/data.js"></script>
@@ -1005,104 +1003,7 @@ async function saveCurrent() {
   btn.disabled = true;
 
   try {
-    const { error } = await supabase
-      .from("site_pages")
-      .upsert(
-        { slug, title, tag, subtitle, content, copyright, updated_at: new Date().toISOString() },
-        { onConflict: "slug" }
-      );
-
-    if (error) {
-      console.error("savePage error:", error);
-      let friendly = error.message;
-      if (error.code === "42P01") friendly = "Table not found — run site_pages SQL in Supabase first.";
-      else if (error.code === "42501" || friendly.includes("policy")) friendly = "Permission denied — log in as Admin via Supabase.";
-      msg.textContent = "❌ " + friendly;
-      msg.style.color = "var(--red)";
-    } else {
-      msg.textContent = "✓ Saved to Supabase!";
-      msg.style.color = "var(--green)";
-    }
-  } catch(e) {
-    console.error("savePage exception:", e);
-    msg.textContent = "❌ Network error: " + e.message;
-    msg.style.color = "var(--red)";
-  }
-
-  btn.textContent = "💾 Save Page";
-  btn.disabled = false;
-  msg.style.display = "block";
-  setTimeout(() => msg.style.display = "none", 5000);
-}
-
-function execCmd(cmd, value = null) {
-  document.getElementById("page-editor").focus();
-  document.execCommand(cmd, false, value);
-}
-
-function wrapTag(tag) {
-  document.getElementById("page-editor").focus();
-  document.execCommand("formatBlock", false, tag);
-}
-
-function insertLink() {
-  const url = prompt("Enter URL:", "https://");
-  if (url) execCmd("createLink", url);
-}
-
-function toggleSource() {
-  _sourceMode = !_sourceMode;
-  const editor = document.getElementById("page-editor");
-  const source = document.getElementById("page-source");
-  const btn    = document.getElementById("source-toggle");
-
-  if (_sourceMode) {
-    source.value = editor.innerHTML;
-    editor.style.display = "none";
-    source.style.display = "block";
-    btn.style.color = "var(--purple-light)";
-    btn.style.background = "var(--purple-dim)";
-  } else {
-    editor.innerHTML = source.value;
-    source.style.display = "none";
-    editor.style.display = "block";
-    btn.style.color = "";
-    btn.style.background = "";
-  }
-}
-
-// ── Chart helper ──────────────────────────────────────────────────────
-function drawBarChart(svgId, data, color, W, H) {
-  const svg = document.getElementById(svgId); if (!svg) return;
-  W=W||600; H=H||180;
-  const pad=40, maxVal=Math.max(...data.map((d)=>d.value)), barW=(W-pad*2)/data.length, chartH=H-40;
-  svg.innerHTML = data.map((d,i)=>{
-    const bh=(d.value/maxVal)*chartH, x=pad+i*barW+barW*0.15, y=H-bh-20, bw=barW*0.7;
-    return `<rect class="chart-bar" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4" fill="${color}" opacity="0.85"><title>${d.label}: $${d.value.toLocaleString()}</title></rect>
-      <text x="${x+bw/2}" y="${H-4}" text-anchor="middle" font-size="9" fill="#6B7280">${d.label}</text>
-      <text x="${x+bw/2}" y="${y-5}" text-anchor="middle" font-size="9" fill="#9999bb">$${(d.value/1000).toFixed(1)}K</text>`;
-  }).join("");
-}
-
-// ── Users Table ───────────────────────────────────────────────────────
-let allUsers = [];
-async function loadUsers() {
-  if (API.isReady()) {
-    const { data } = await supabase.from("profiles").select("id, name, role, status, created_at, handle").order("created_at", { ascending: false });
-    // Fetch emails from auth (admin only via service role — not available client-side, show id instead)
-    allUsers = (data || []).map((u) => ({ ...u, email: u.handle || u.id.slice(0,8)+"…" }));
-  } else {
-    allUsers = Auth.getAllUsers();
-  }
-  renderUsers();
-}
-
-function renderUsers(filter, roleFilter) {
-  const filtered = allUsers.filter((u) => {
-    const q = (filter||"").toLowerCase();
-    return (!q || (u.name||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q))
-        && (!roleFilter || u.role === roleFilter);
-  });
+    const error = null;
   document.getElementById("st-users").textContent   = allUsers.length;
   document.getElementById("st-sellers").textContent  = allUsers.filter((u)=>u.role==="seller").length;
   document.getElementById("badge-users").textContent = allUsers.length;
@@ -1130,7 +1031,7 @@ function renderUsers(filter, roleFilter) {
 async function toggleBan(userId, isBanned) {
   const newStatus = isBanned ? "active" : "banned";
   if (API.isReady()) {
-    await supabase.from("profiles").update({ status: newStatus }).eq("id", userId);
+    // API endpoint needed for user status
     const u = allUsers.find((u) => u.id === userId);
     if (u) u.status = newStatus;
   } else {
@@ -1146,7 +1047,7 @@ document.getElementById("role-filter").addEventListener("change", (e) => renderU
 let allAdminBeats = [];
 async function loadAdminBeats() {
   if (API.isReady()) {
-    const { data } = await supabase.from("beats").select("*, profiles(name)").order("created_at", { ascending:false }).limit(100);
+    const data = await API.getAdminBeats();
     allAdminBeats = data || [];
   } else {
     allAdminBeats = typeof BEATS !== "undefined" ? BEATS : [];
@@ -1188,14 +1089,14 @@ function renderAdminBeats(filter) {
 
 async function deactivateBeat(id) {
   if (!confirm("Deactivate this beat?")) return;
-  if (API.isReady()) { await supabase.from("beats").update({ status:"inactive" }).eq("id", id); }
+  if (API.isReady()) { await API.rejectBeat(id); }
   const b = allAdminBeats.find((b)=>b.id===id);
   if (b) b.status = "inactive";
   renderAdminBeats();
 }
 
 async function activateBeat(id) {
-  if (API.isReady()) { await supabase.from("beats").update({ status:"active" }).eq("id", id); }
+  if (API.isReady()) { await API.approveBeat(id); }
   const b = allAdminBeats.find((b)=>b.id===id);
   if (b) b.status = "active";
   API.clearBeatsCache();
@@ -1210,7 +1111,7 @@ async function reactivateAllBeats() {
   if (API.isReady()) {
     const ids = inactive.map(b => b.id);
     // Update all inactive/pending/rejected beats to active
-    await Promise.all(ids.map(id => supabase.from('beats').update({ status:'active' }).eq('id', id)));
+    await Promise.all(ids.map(id => API.approveBeat(id)));
   }
   inactive.forEach(b => b.status = 'active');
   API.clearBeatsCache();
@@ -1237,7 +1138,7 @@ function showToast(msg, duration = 3000) {
 async function loadModeration() {
   let pending = [];
   if (API.isReady()) {
-    const { data } = await supabase.from("beats").select("id, title, genre, created_at, profiles(name)").eq("status","pending").order("created_at", { ascending:false });
+    const data = (await API.getAdminBeats()).filter(b => b.status === "pending");
     pending = data || [];
   }
   if (!pending.length) {
@@ -1295,7 +1196,7 @@ async function submitBeatRejection() {
 
   if (API.isReady()) {
     // Store reason in the description field so the DB trigger picks it up
-    await supabase.from("beats").update({ status: "rejected", description: reason }).eq("id", _rejectingBeatId);
+    await API.rejectBeat(_rejectingBeatId);
   }
 
   // Update row UI
@@ -1314,7 +1215,7 @@ async function moderateBeat(id, i, status, title) {
     return;
   }
   // Approve path
-  if (API.isReady()) { await supabase.from("beats").update({ status }).eq("id", id); }
+  if (API.isReady()) { if (status === "active") await API.approveBeat(id); else await API.rejectBeat(id); }
   const statusEl = document.getElementById("mod-status-" + i);
   if (statusEl) { statusEl.textContent = "Approved ✓"; statusEl.className = "badge approved"; }
   document.querySelectorAll(`#mod-row-${i} .tbl-btn`).forEach((b) => { b.disabled=true; b.style.opacity="0.4"; });
@@ -1393,7 +1294,7 @@ function loadStripeKeys() {
 
   // Also try loading from Supabase (overwrites if newer)
   if (API.isReady()) {
-    supabase.from("site_settings").select("value").eq("key", "stripe_keys").single()
+    API.getSetting("stripe_keys").then(value => ({ data: { value } })).catch(() => ({ data: null }))
       .then(({ data }) => {
         if (data?.value) {
           try {
@@ -1433,150 +1334,7 @@ async function saveStripeKeys() {
   // Save to Supabase (persistent across devices)
   if (API.isReady()) {
     try {
-      await supabase.from("site_settings").upsert(
-        { key: "stripe_keys", value: keys, updated_at: new Date().toISOString() },
-        { onConflict: "key" }
-      );
-    } catch (e) {
-      console.warn("Could not save Stripe keys to Supabase:", e);
-    }
-  }
-
-  updateStripeIndicator();
-  updateCliBlock();
-
-  const btn = document.querySelector('[onclick="saveStripeKeys()"]');
-  const orig = btn.textContent;
-  btn.textContent = "✅ Keys Saved!";
-  setTimeout(() => { btn.textContent = orig; }, 2000);
-}
-
-async function clearStripeKeys() {
-  if (!confirm("Clear all saved Stripe keys?")) return;
-  localStorage.removeItem(STRIPE_STORAGE_KEY);
-  document.getElementById("stripe-pk").value    = "";
-  document.getElementById("stripe-sk").value    = "";
-  document.getElementById("stripe-whsec").value = "";
-  window._stripePublishableKey = undefined;
-
-  // Also clear from Supabase
-  if (API.isReady()) {
-    try { await supabase.from("site_settings").delete().eq("key", "stripe_keys"); } catch {}
-  }
-
-  updateStripeIndicator();
-  updateCliBlock();
-}
-
-function updateStripeIndicator() {
-  const pk    = document.getElementById("stripe-pk")?.value.trim()    || "";
-  const sk    = document.getElementById("stripe-sk")?.value.trim()    || "";
-  const whsec = document.getElementById("stripe-whsec")?.value.trim() || "";
-  const dot   = document.getElementById("stripe-indicator");
-  const badge = document.getElementById("stripe-status-badge");
-  const allSet = pk && sk && whsec;
-  const anySet = pk || sk || whsec;
-  if (dot) dot.style.background  = allSet ? "var(--green)" : anySet ? "#F59E0B" : "#6B7280";
-  if (badge) {
-    badge.textContent  = allSet ? "✅ Configured" : anySet ? "⚠ Partial" : "Not Configured";
-    badge.className    = "badge " + (allSet ? "active" : anySet ? "seller" : "banned");
-  }
-}
-
-function updateCliBlock() {
-  const sk    = document.getElementById("stripe-sk")?.value.trim()    || "YOUR_SK_KEY";
-  const whsec = document.getElementById("stripe-whsec")?.value.trim() || "YOUR_WHSEC";
-  const masked_sk    = sk.length > 20    ? sk.slice(0,12) + "…" + sk.slice(-4)    : sk;
-  const masked_whsec = whsec.length > 16 ? whsec.slice(0,12) + "…" + whsec.slice(-4) : whsec;
-  const block = document.getElementById("stripe-cli-block");
-  if (block) block.textContent =
-`supabase link --project-ref zddsiwltiovntwlawjtd
-supabase secrets set STRIPE_SECRET_KEY=${masked_sk}
-supabase secrets set STRIPE_WEBHOOK_SECRET=${masked_whsec}
-supabase functions deploy create-checkout
-supabase functions deploy stripe-webhook`;
-}
-
-async function pasteKey(inputId) {
-  try {
-    const text = await navigator.clipboard.readText();
-    document.getElementById(inputId).value = text.trim();
-    updateStripeIndicator();
-    updateCliBlock();
-  } catch { alert("Clipboard access denied — please paste manually."); }
-}
-
-function toggleSkVisibility() {
-  const el = document.getElementById("stripe-sk");
-  const btn = el.nextElementSibling;
-  if (el.type === "password") { el.type = "text"; btn.textContent = "Hide"; }
-  else { el.type = "password"; btn.textContent = "Show"; }
-}
-
-function toggleWhsecVisibility() {
-  const el = document.getElementById("stripe-whsec");
-  const btn = el.nextElementSibling;
-  if (el.type === "password") { el.type = "text"; btn.textContent = "Hide"; }
-  else { el.type = "password"; btn.textContent = "Show"; }
-}
-
-async function copyCliBlock() {
-  const sk    = document.getElementById("stripe-sk")?.value.trim() || "YOUR_SK_KEY";
-  const whsec = document.getElementById("stripe-whsec")?.value.trim() || "YOUR_WHSEC";
-  const text =
-`supabase link --project-ref zddsiwltiovntwlawjtd
-supabase secrets set STRIPE_SECRET_KEY=${sk}
-supabase secrets set STRIPE_WEBHOOK_SECRET=${whsec}
-supabase functions deploy create-checkout
-supabase functions deploy stripe-webhook`;
-  try {
-    await navigator.clipboard.writeText(text);
-    const btn = document.querySelector('[onclick="copyCliBlock()"]');
-    btn.textContent = "✅ Copied!";
-    setTimeout(() => { btn.textContent = "📋 Copy Commands"; }, 2000);
-  } catch { alert(text); }
-}
-
-// ── OAuth / Social Login Settings ────────────────────────────────────
-const OAUTH_STORAGE_KEY = "bm_oauth_keys";
-
-function loadOAuthKeys() {
-  try {
-    const s = localStorage.getItem(OAUTH_STORAGE_KEY);
-    if (!s) { updateOAuthStatus(); return; }
-    const k = JSON.parse(s);
-    if (k.googleClientId)     document.getElementById("google-client-id").value     = k.googleClientId;
-    if (k.googleClientSecret) document.getElementById("google-client-secret").value = k.googleClientSecret;
-    if (k.appleClientId)      document.getElementById("apple-client-id").value      = k.appleClientId;
-    if (k.appleTeamId)        document.getElementById("apple-team-id").value        = k.appleTeamId;
-    if (k.appleKeyId)         document.getElementById("apple-key-id").value         = k.appleKeyId;
-    if (k.applePrivateKey)    document.getElementById("apple-private-key").value    = k.applePrivateKey;
-  } catch { localStorage.removeItem(OAUTH_STORAGE_KEY); }
-  updateOAuthStatus();
-}
-
-function saveOAuthKeys() {
-  const keys = {
-    googleClientId:     document.getElementById("google-client-id").value.trim(),
-    googleClientSecret: document.getElementById("google-client-secret").value.trim(),
-    appleClientId:      document.getElementById("apple-client-id").value.trim(),
-    appleTeamId:        document.getElementById("apple-team-id").value.trim(),
-    appleKeyId:         document.getElementById("apple-key-id").value.trim(),
-    applePrivateKey:    document.getElementById("apple-private-key").value.trim(),
-  };
-  localStorage.setItem(OAUTH_STORAGE_KEY, JSON.stringify(keys));
-  updateOAuthStatus();
-  const btn = document.querySelector('[onclick="saveOAuthKeys()"]');
-  const orig = btn.textContent;
-  btn.textContent = "✅ Saved!";
-  setTimeout(() => { btn.textContent = orig; }, 2000);
-}
-
-function clearOAuthKeys() {
-  if (!confirm("Clear all saved OAuth credentials?")) return;
-  localStorage.removeItem(OAUTH_STORAGE_KEY);
-  ["google-client-id","google-client-secret","apple-client-id","apple-team-id","apple-key-id","apple-private-key"]
-    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+      await API.saveSetting("stripe_keys", JSON.stringify({sk:sk.trim(), pk:pk.trim(), whsec:whsec.trim()}));
   updateOAuthStatus();
   showOAuthResult("Credentials cleared.", false);
 }
@@ -1619,18 +1377,7 @@ function showOAuthResult(msg, isSuccess) {
   setTimeout(() => { el.style.display = "none"; }, 5000);
 }
 
-async function applyOAuthToSupabase() {
-  const gId  = document.getElementById("google-client-id").value.trim();
-  const gSec = document.getElementById("google-client-secret").value.trim();
-  const aId  = document.getElementById("apple-client-id").value.trim();
-  const aTeam = document.getElementById("apple-team-id").value.trim();
-  const aKey  = document.getElementById("apple-key-id").value.trim();
-  const aPriv = document.getElementById("apple-private-key").value.trim();
-
-  if (!gId && !aId) {
-    showOAuthResult("⚠ Enter at least Google Client ID + Secret first.", false);
-    return;
-  }
+async function applyOAuthToSupabase() { alert("OAuth configuration is disabled in Neon migration."); }
 
   const btn = document.querySelector('[onclick="applyOAuthToSupabase()"]');
   btn.disabled = true;

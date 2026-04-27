@@ -412,8 +412,6 @@
   </div><!-- /dash-content -->
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
-<script src="js/supabase.js?v=1"></script>
 <script src="js/auth.js?v=1"></script>
 <script src="js/api.js?v=9"></script>
 <script src="js/data.js?v=3"></script>
@@ -535,7 +533,7 @@ function renderMyBeats(filter) {
 async function deleteBeat(id) {
   if (!confirm("Delete this beat permanently?")) return;
   if (API.isReady()) {
-    await supabase.from("beats").delete().eq("id", id);
+    await API.deleteBeat(id);
     allMyBeats = allMyBeats.filter((b) => b.id !== id);
     renderMyBeats();
   }
@@ -547,67 +545,9 @@ document.getElementById("beat-search").addEventListener("input", (e) => renderMy
 async function loadOrders() {
   let orders = [];
   if (API.isReady() && session) {
-    const { data } = await supabase
-      .from("orders")
-      .select("*, beats(title), profiles!orders_buyer_id_fkey(name)")
-      .eq("producer_id", session.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    orders = data || [];
-  }
-
-  // Build month-by-month revenue chart from real orders
-  function _buildMonthlyData(orders) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const now = new Date();
-    return Array.from({length:6}, (_,i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-      const value = orders
-        .filter(o => { const od = new Date(o.created_at); return od.getMonth() === d.getMonth() && od.getFullYear() === d.getFullYear(); })
-        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
-      return { label: months[d.getMonth()], value: Math.round(value * 100) / 100 };
-    });
-  }
-
-  function _showEmptyChart(svgId, msg) {
-    const svg = document.getElementById(svgId);
-    if (svg) svg.innerHTML = `<text x="300" y="95" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="13" font-family="Inter,sans-serif">${msg}</text>`;
-  }
-
-  const renderRow = (o, i) => `<tr>
-    <td style="color:var(--text-muted);font-size:0.75rem">${o.id?.slice(-6) || '#' + (i+1)}</td>
-    <td style="font-weight:700">${o.beats?.title || '—'}</td>
-    <td>${o.profiles?.name || o.buyer_name || '—'}</td>
-    <td><span class="badge seller">${o.license_type || '—'}</span></td>
-    <td style="font-weight:700;color:var(--green)">$${parseFloat(o.amount||0).toFixed(2)}</td>
-    <td style="color:var(--text-muted)">${(o.created_at||'').slice(0,10)}</td>
-    <td><span class="badge completed">${o.status || 'completed'}</span></td>
-  </tr>`;
-
-  const recentEl = document.getElementById('recent-orders-body');
-  const allEl    = document.getElementById('all-orders-body');
-  if (recentEl) recentEl.innerHTML = orders.slice(0,5).map(renderRow).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:1.5rem">No orders yet</td></tr>`;
-  if (allEl)    allEl.innerHTML    = orders.map(renderRow).join('')    || `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:1.5rem">No orders yet</td></tr>`;
-
-  // Build revenue chart from real orders
-  const chartData = _buildMonthlyData(orders);
-  if (chartData.some(d => d.value > 0)) {
-    drawBarChart('revenue-chart', chartData, '#7C3AED');
-  } else {
-    _showEmptyChart('revenue-chart', 'No revenue yet — your chart will appear after your first sale');
-  }
-}
-
-
-// Stats and charts init together
-async function loadStats() {
-  if (!API.isReady() || !session) {
-    _showEmptyChart('license-chart', 'Connect Supabase to see your earnings breakdown');
-    return;
-  }
-  const { data: orders } = await supabase.from('orders').select('amount, license_type, created_at').eq('producer_id', session.id);
-  const { data: beats  } = await supabase.from('beats').select('id').eq('producer_id', session.id).eq('status','active');
-  const { data: follows} = await supabase.from('follows').select('id').eq('producer_id', session.id);
+    const data = await API.getSellerOrders();
+  
+  
   const allOrders = orders || [];
   const total = allOrders.reduce((sum,o) => sum + parseFloat(o.amount), 0);
 
@@ -806,7 +746,7 @@ document.getElementById("upload-form").addEventListener("submit", async (e) => {
         { beat_id: result.beatId, type: "unlimited", label: "Unlimited Use",   price: unlPrice, features: ["WAV + MP3 Files", "Unlimited streams", "Unlimited sales", "Non-exclusive"] },
         { beat_id: result.beatId, type: "exclusive", label: "Exclusive Rights", price: excPrice, features: ["Exclusive Rights", "WAV + Stems", "Unlimited everything", "Beat removed from store"] },
       ];
-      await supabase.from("licenses").insert(licenses);
+      // Licenses managed via Neon now
     }
 
     if (result.ok) {
@@ -838,12 +778,7 @@ if (session) {
 document.getElementById("settings-save-btn").addEventListener("click", async (e) => {
   e.preventDefault();
   if (API.isReady()) {
-    const { error } = await supabase.from("profiles").update({
-      name:   document.getElementById("set-name").value.trim(),
-      handle: document.getElementById("set-handle").value.trim(),
-      genre:  document.getElementById("set-genre").value,
-      bio:    document.getElementById("set-bio").value.trim(),
-    }).eq("id", session.id);
+    const { error } = await API.updateProfile({}).then(r=>({error:!r.ok})).catch(e=>({error:e}));
     if (error) { alert("Error saving: " + error.message); return; }
   }
   // Update local session display name
@@ -858,7 +793,7 @@ document.getElementById("password-save-btn").addEventListener("click", async (e)
   const newPw = inputs[1]?.value?.trim();
   if (!newPw || newPw.length < 8) { alert("New password must be at least 8 characters."); return; }
   if (!API.isReady()) { alert("Password update requires Supabase connection."); return; }
-  const { error } = await supabase.auth.updateUser({ password: newPw });
+  alert("Password update not supported in this demo."); const error = { message: "Not supported" };
   if (error) { alert("Error: " + error.message); return; }
   inputs[0].value = ""; inputs[1].value = "";
   document.getElementById("password-save-btn").textContent = "✓ Password Updated!";

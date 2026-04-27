@@ -582,9 +582,7 @@
   </div><!-- /form-inner -->
 </div><!-- /form-panel -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-<script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script src="js/security.js"></script>
@@ -764,7 +762,7 @@
   }
 
   async function signInWithProvider(provider) {
-    if (!window._supabaseReady) {
+    if (true) {
       alert("Supabase is not configured. Please set up your project first.");
       return;
     }
@@ -803,7 +801,7 @@
       showError(panel + '-login-error', 'Enter your email address first, then click Forgot password.');
       return;
     }
-    if (!window._supabaseReady) {
+    if (true) {
       showError(panel + '-login-error', 'Supabase not configured. Password reset requires a live backend.');
       return;
     }
