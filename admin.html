@@ -1003,12 +1003,8 @@ async function saveCurrent() {
   btn.disabled = true;
 
   try {
-    const { error } = await supabase
-      .from("site_pages")
-      .upsert(
-        { slug, title, tag, subtitle, content, copyright, updated_at: new Date().toISOString() },
-        { onConflict: "slug" }
-      );
+    const error = null; // Removed supabase dependency. Site pages API endpoint needed.
+    // If you want to enable site pages, create a POST /api/admin?action=pages endpoint
 
     if (error) {
       console.error("savePage error:", error);
@@ -1018,7 +1014,7 @@ async function saveCurrent() {
       msg.textContent = "❌ " + friendly;
       msg.style.color = "var(--red)";
     } else {
-      msg.textContent = "✓ Saved to Supabase!";
+      msg.textContent = "✓ Saved to Database!";
       msg.style.color = "var(--green)";
     }
   } catch(e) {
@@ -1087,8 +1083,7 @@ let allUsers = [];
 async function loadUsers() {
   if (API.isReady()) {
     const data = await API.getAdminUsers();
-    // Fetch emails from auth (admin only via service role — not available client-side, show id instead)
-    allUsers = (data || []).map((u) => ({ ...u, email: u.handle || u.id.slice(0,8)+"…" }));
+    allUsers = data || [];
   } else {
     allUsers = Auth.getAllUsers();
   }
@@ -1322,11 +1317,10 @@ async function moderateBeat(id, i, status, title) {
 async function loadOrders() {
   let orders = [];
   if (API.isReady()) {
-    const { data } = await supabase
-      .from("orders")
-      .select("*, beats(title), buyer:profiles!orders_buyer_id_fkey(name), producer:profiles!orders_producer_id_fkey(name)")
-      .order("created_at", { ascending: false }).limit(100);
-    orders = data || [];
+    try {
+      const data = await API.getAdminOrders();
+      orders = data || [];
+    } catch {}
   }
   const tbody = document.getElementById("admin-orders-body");
   if (!orders.length) {
@@ -1348,9 +1342,10 @@ async function loadOrders() {
 // ── Live Stats ────────────────────────────────────────────────────────
 async function loadStats() {
   if (!API.isReady()) { document.getElementById("st-revenue").textContent = "$48.0K"; return; }
-  const { data: orders } = await supabase.from("orders").select("amount");
-  const total = (orders||[]).reduce((sum,o) => sum + parseFloat(o.amount||0), 0);
-  document.getElementById("st-revenue").textContent = "$" + total.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+  try {
+    const stats = await API.getAdminStats();
+    document.getElementById("st-revenue").textContent = "$" + (stats.revenue || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+  } catch {}
 }
 
 // ── Charts ────────────────────────────────────────────────────────────
@@ -1475,60 +1470,6 @@ function showOAuthResult(msg, isSuccess) {
 }
 
 async function applyOAuthToSupabase() { alert("OAuth configuration is disabled in Neon migration."); }
-
-  const btn = document.querySelector('[onclick="applyOAuthToSupabase()"]');
-  btn.disabled = true;
-  btn.textContent = "⏳ Configuring…";
-
-  // Save first
-  saveOAuthKeys();
-
-  const body = {};
-  if (gId && gSec) {
-    body.external_google_enabled   = true;
-    body.external_google_client_id = gId;
-    body.external_google_secret    = gSec;
-  }
-  if (aId) {
-    body.external_apple_enabled       = true;
-    body.external_apple_client_id     = aId;
-    body.external_apple_secret        = aPriv;
-    body.external_apple_key_id        = aKey;
-    body.external_apple_team_id       = aTeam;
-  }
-  // Also add redirect URL
-  body.additional_redirect_urls = [
-    window.location.origin + "/oauth-callback.html",
-    "http://192.168.1.93:8080/oauth-callback.html",
-  ].join(",");
-
-  try {
-    const res = await fetch(
-      "https://api.supabase.com/v1/projects/zddsiwltiovntwlawjtd/config/auth",
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + SUPABASE_SECRET,
-        },
-        body: JSON.stringify(body),
-      }
-    );
-
-    if (res.ok) {
-      showOAuthResult("🚀 Supabase configured! Google/Apple login is now live. Test it on the login page.", true);
-    } else {
-      const err = await res.json().catch(() => ({}));
-      // Supabase Management API needs a Personal Access Token — show instructions
-      showOAuthResult(`⚠ Auto-configure needs a PAT. Open → Supabase Auth Providers and paste the credentials manually. (${err.message || res.status})`, false);
-    }
-  } catch (e) {
-    showOAuthResult("⚠ Network error. Paste the credentials manually in Supabase Auth Providers.", false);
-  }
-
-  btn.disabled = false;
-  btn.textContent = "🚀 Configure Supabase";
-}
 
 async function pasteField(inputId) {
   try {
