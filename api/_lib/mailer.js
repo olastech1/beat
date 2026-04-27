@@ -17,7 +17,7 @@ export async function sendEmail({ to, subject, html }) {
 
   try {
     const data = await resend.emails.send({
-      from: \`BeatMarket <\${FROM_EMAIL}>\`,
+      from: `BeatMarket <${FROM_EMAIL}>`,
       to,
       subject,
       html
