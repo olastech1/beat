@@ -5,6 +5,9 @@
   "engines": {
     "node": "20.x"
   },
+  "scripts": {
+    "build": "echo 'Building...'"
+  },
   "description": "Beat marketplace — Neon + Vercel Functions",
   "dependencies": {
     "@neondatabase/serverless": "^0.9.5",
