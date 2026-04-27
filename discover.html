@@ -774,8 +774,8 @@ function buildSlide(beat, i) {
 
       <!-- Buy button -->
       <button class="btn-buy-now" onclick="buyNow(${i})">
-        <span>🛒 Get Full License</span>
-        <span class="btn-buy-price">from $${parseFloat(beat.price||0).toFixed(2)}</span>
+        <span>🛒 Buy Now</span>
+        <span class="btn-buy-price">$${parseFloat(beat.price||0).toFixed(2)}</span>
       </button>
     </div>
 
@@ -783,12 +783,12 @@ function buildSlide(beat, i) {
     <div class="preview-banner" id="pbanner-${i}">
       <div style="font-size:3rem">🎵</div>
       <h2>Preview Ended</h2>
-      <p>You've heard 30 seconds of "<strong>${beat.title}</strong>".<br>Get the full beat with a license.</p>
+      <p>You've heard 30 seconds of "<strong>${beat.title}</strong>".<br>Unlock the full beat and download it instantly.</p>
       <div class="preview-countdown" id="pcount-${i}" style="display:none">
         Next beat in <span id="pnum-${i}">5</span>s…
       </div>
       <button class="btn-get-license" onclick="buyNow(${i})">
-        🛒 Get License — from $${parseFloat(beat.price||0).toFixed(2)}
+        🛒 Buy Now — $${parseFloat(beat.price||0).toFixed(2)}
       </button>
       <button class="btn-replay" onclick="replaySlide(${i})">▶ Replay 30s</button>
       <button class="btn-replay" onclick="nextSlide()" style="margin-top:-0.5rem">⏭ Next Beat</button>
@@ -1070,7 +1070,10 @@ function shareSlide(idx) {
 
 function buyNow(idx) {
   const beat = beats[idx]; if (!beat) return;
-  window.location.href = `index.html?beat=${beat.id}`;
+  // Add to discover cart (for cross-page restore)
+  addToCart(idx);
+  // Redirect to store with beat ID so it auto-adds to cart
+  window.location.href = `index.html?buybeat=${encodeURIComponent(beat.id)}`;
 }
 
 // ════════════════════════════════════════════════════════

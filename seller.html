@@ -247,32 +247,10 @@
                   <option>F# Minor</option><option>G Minor</option><option>G Major</option>
                 </select>
               </div>
-
-              <!-- License Pricing -->
-              <div class="form-group form-group-full" style="margin-top:0.5rem">
-                <label style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem">💰 License Pricing <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem">— set your own prices for each tier</span></label>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:0.75rem">
-                  <div>
-                    <label style="font-size:0.78rem;color:var(--text-secondary)">🎵 MP3 Lease ($)</label>
-                    <input type="number" id="up-price-mp3" placeholder="29.99" min="1" step="0.01" oninput="autoFillPrices()">
-                  </div>
-                  <div>
-                    <label style="font-size:0.78rem;color:var(--text-secondary)">🎧 WAV + MP3 ($)</label>
-                    <input type="number" id="up-price-wav" placeholder="59.99" min="1" step="0.01">
-                  </div>
-                  <div>
-                    <label style="font-size:0.78rem;color:var(--text-secondary)">♾️ Unlimited ($)</label>
-                    <input type="number" id="up-price-unlimited" placeholder="99.99" min="1" step="0.01">
-                  </div>
-                  <div>
-                    <label style="font-size:0.78rem;color:var(--text-secondary)">👑 Exclusive ($)</label>
-                    <input type="number" id="up-price-exclusive" placeholder="299.99" min="1" step="0.01">
-                  </div>
-                </div>
-                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Leave blank to use default multipliers (1×, 2×, 4×, 10×). MP3 price = your base beat price.</p>
+              <div class="form-group">
+                <label>Price ($)</label>
+                <input type="number" id="up-price" placeholder="29.99" min="0" step="0.01">
               </div>
-              <!-- Hidden: keep up-price for backward compat -->
-              <input type="hidden" id="up-price">
               <div class="form-group">
                 <label>Tags (comma separated)</label>
                 <input type="text" id="up-tags" placeholder="dark, melodic, hard">
@@ -437,7 +415,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <script src="js/supabase.js?v=1"></script>
 <script src="js/auth.js?v=1"></script>
-<script src="js/api.js?v=8"></script>
+<script src="js/api.js?v=9"></script>
 <script src="js/data.js?v=3"></script>
 <script>
 // ── Auth guard ────────────────────────────────────────────────────────

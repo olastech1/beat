@@ -287,14 +287,39 @@ const API = (() => {
     const session = await Auth.getSession();
     if (!session) return { ok: false, error: "Not logged in." };
 
+    // ── Validate beatId is a real UUID (demo beats are "demo-1" etc.) ──
+    const isUUID = (v) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+    if (!isUUID(beatId)) {
+      console.info("Demo beat — mock order success:", beatId);
+      return { ok: true };
+    }
+
+    // ── Resolve producerId if missing or not a UUID ──────────────────
+    let resolvedProducerId = isUUID(producerId) ? producerId : null;
+    if (!resolvedProducerId) {
+      const { data: beatRow } = await supabase.from("beats").select("producer_id").eq("id", beatId).single();
+      resolvedProducerId = beatRow?.producer_id || null;
+    }
+    if (!resolvedProducerId) return { ok: false, error: "Could not resolve producer for this beat." };
+
+    // ── Ensure buyer profile exists (OAuth users may not have one yet) ─
+    const { error: profErr } = await supabase.from("profiles").upsert({
+      id:    session.id,
+      name:  session.name  || session.email?.split("@")[0] || "User",
+      email: session.email || "",
+      role:  session.role  || "buyer",
+    }, { onConflict: "id", ignoreDuplicates: true });
+    if (profErr) console.warn("Profile upsert warning:", profErr.message);
+
+    // ── Insert order ─────────────────────────────────────────────────
     const { error } = await supabase.from("orders").insert({
-      buyer_id: session.id,
-      beat_id: beatId,
-      license_id: licenseId || null,
-      producer_id: producerId,
+      buyer_id:     session.id,
+      beat_id:      beatId,
+      license_id:   licenseId || null,
+      producer_id:  resolvedProducerId,
       amount,
-      license_type: licenseType,
-      status: "completed",
+      license_type: licenseType || "standard",
+      status:       "completed",
     });
 
     if (error) return { ok: false, error: error.message };

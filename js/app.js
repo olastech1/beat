@@ -385,7 +385,23 @@ const App = (() => {
     Player.init();
     Cart.init();
 
+    // ── Auto-add beat from discover ?buybeat=ID ───────────────────────
+    const buyBeatId = new URLSearchParams(window.location.search).get('buybeat');
+    if (buyBeatId) {
+      const beat = allBeats.find(b => String(b.id) === String(buyBeatId));
+      if (beat) {
+        // Small delay so Cart.init() finishes loading Supabase cart first
+        setTimeout(() => {
+          Cart.addToCart(beat);
+          Cart.openCart();
+        }, 600);
+      }
+      // Clean the URL so refreshing doesn't re-add
+      history.replaceState({}, '', window.location.pathname);
+    }
+
     setTimeout(animateCounters, 600);
+
 
     // Show Supabase config warning banner if not configured
     if (!API.isReady()) {
