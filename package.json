@@ -1,6 +1,10 @@
 {
   "name": "beatmarket",
   "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
   "description": "Beat marketplace — Neon + Vercel Functions",
   "dependencies": {
     "@neondatabase/serverless": "^0.9.5",
