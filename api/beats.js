@@ -1,6 +1,6 @@
 // api/beats/index.js — GET all beats / POST new beat
-import sql from '../lib/db.js';
-import { requireAuth, cors } from '../lib/auth.js';
+import sql from './_lib/db.js';
+import { requireAuth, cors } from './_lib/auth.js';
 
 function mapBeat(b) {
   return {
@@ -42,8 +42,18 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── POST — create beat ────────────────────────────────────────
+  // ── POST — create beat or track plays ────────────────────────────────────────
   if (req.method === 'POST') {
+    const action = req.query.action || req.body?.action;
+    
+    if (action === 'plays') {
+      const { beatId } = req.body;
+      if (beatId) {
+        await sql`UPDATE beats SET plays = plays + 1 WHERE id = ${beatId}`;
+      }
+      return res.json({ ok: true });
+    }
+
     const user = requireAuth(req, res);
     if (!user) return;
     if (!['seller','admin'].includes(user.role))

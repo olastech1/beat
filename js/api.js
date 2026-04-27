@@ -47,7 +47,7 @@ const API = (() => {
   }
 
   async function incrementPlays(beatId) {
-    try { await apiFetch(`/api/beats/plays`, { method: 'POST', body: { beatId } }); }
+    try { await apiFetch(`/api/beats?action=plays`, { method: 'POST', body: { beatId } }); }
     catch {}
   }
 
@@ -71,7 +71,7 @@ const API = (() => {
 
   async function getSellerOrders() {
     try {
-      const data = await apiFetch('/api/seller/stats');
+      const data = await apiFetch('/api/seller');
       return data.orders || [];
     } catch { return []; }
   }
@@ -118,21 +118,21 @@ const API = (() => {
 
   // ── Admin ──────────────────────────────────────────────────────
   async function getAdminStats() {
-    try { return await apiFetch('/api/admin/stats'); }
+    try { return await apiFetch('/api/admin?action=stats'); }
     catch { return { users:0, beats:0, orders:0, revenue:0 }; }
   }
 
   async function getAdminBeats() {
-    try { return await apiFetch('/api/admin/beats'); }
+    try { return await apiFetch('/api/admin?action=beats'); }
     catch { return []; }
   }
 
-  async function approveBeat(id)  { return apiFetch('/api/admin/beats', { method: 'PUT', body: { id, status: 'active' } }); }
-  async function rejectBeat(id)   { return apiFetch('/api/admin/beats', { method: 'PUT', body: { id, status: 'inactive' } }); }
-  async function deleteBeat(id)   { return apiFetch('/api/admin/beats', { method: 'DELETE', body: { id } }); }
+  async function approveBeat(id)  { return apiFetch('/api/admin?action=beats', { method: 'PUT', body: { id, status: 'active' } }); }
+  async function rejectBeat(id)   { return apiFetch('/api/admin?action=beats', { method: 'PUT', body: { id, status: 'inactive' } }); }
+  async function deleteBeat(id)   { return apiFetch('/api/admin?action=beats', { method: 'DELETE', body: { id } }); }
 
   async function getSellerStats() {
-    try { return await apiFetch('/api/seller/stats'); }
+    try { return await apiFetch('/api/seller'); }
     catch { return { beats:0, revenue:0, sales:0, orders:[] }; }
   }
 

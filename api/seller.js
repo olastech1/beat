@@ -1,6 +1,6 @@
 // api/seller/stats.js
-import sql from '../lib/db.js';
-import { requireRole, cors } from '../lib/auth.js';
+import sql from './_lib/db.js';
+import { requireRole, cors } from './_lib/auth.js';
 
 export default async function handler(req, res) {
   cors(res);

@@ -29,19 +29,19 @@ const Auth = (() => {
   // ── Public API ─────────────────────────────────────────────────
 
   async function register({ role, name, email, password, handle, genre }) {
-    const res = await _post('/api/auth/register', { name, email, password, role, handle, genre });
+    const res = await _post('/api/auth?action=register', { name, email, password, role, handle, genre });
     if (res.ok && res.user) _save(res.user, res.token);
     return res;
   }
 
   async function login(email, password, expectedRole) {
-    const res = await _post('/api/auth/login', { email, password, expectedRole });
+    const res = await _post('/api/auth?action=login', { email, password, expectedRole });
     if (res.ok && res.user) _save(res.user, res.token);
     return res;
   }
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    await fetch('/api/auth?action=logout', { method: 'POST', credentials: 'include' }).catch(() => {});
     _clear();
   }
 
@@ -54,7 +54,7 @@ const Auth = (() => {
   // Async — refreshes from server if needed
   async function getSessionAsync() {
     try {
-      const res  = await fetch('/api/auth/me', { credentials: 'include' });
+      const res  = await fetch('/api/auth?action=me', { credentials: 'include' });
       const data = await res.json();
       if (data.ok && data.user) { _save(data.user); return data.user; }
     } catch {}
