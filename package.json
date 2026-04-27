@@ -8,6 +8,7 @@
     "bcryptjs": "^2.4.3",
     "busboy": "^1.6.0",
     "jsonwebtoken": "^9.0.2",
+    "resend": "^6.12.2",
     "stripe": "^14.21.0"
   },
   "devDependencies": {

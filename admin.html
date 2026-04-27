@@ -1003,7 +1003,104 @@ async function saveCurrent() {
   btn.disabled = true;
 
   try {
-    const error = null;
+    const { error } = await supabase
+      .from("site_pages")
+      .upsert(
+        { slug, title, tag, subtitle, content, copyright, updated_at: new Date().toISOString() },
+        { onConflict: "slug" }
+      );
+
+    if (error) {
+      console.error("savePage error:", error);
+      let friendly = error.message;
+      if (error.code === "42P01") friendly = "Table not found — run site_pages SQL in Supabase first.";
+      else if (error.code === "42501" || friendly.includes("policy")) friendly = "Permission denied — log in as Admin via Supabase.";
+      msg.textContent = "❌ " + friendly;
+      msg.style.color = "var(--red)";
+    } else {
+      msg.textContent = "✓ Saved to Supabase!";
+      msg.style.color = "var(--green)";
+    }
+  } catch(e) {
+    console.error("savePage exception:", e);
+    msg.textContent = "❌ Network error: " + e.message;
+    msg.style.color = "var(--red)";
+  }
+
+  btn.textContent = "💾 Save Page";
+  btn.disabled = false;
+  msg.style.display = "block";
+  setTimeout(() => msg.style.display = "none", 5000);
+}
+
+function execCmd(cmd, value = null) {
+  document.getElementById("page-editor").focus();
+  document.execCommand(cmd, false, value);
+}
+
+function wrapTag(tag) {
+  document.getElementById("page-editor").focus();
+  document.execCommand("formatBlock", false, tag);
+}
+
+function insertLink() {
+  const url = prompt("Enter URL:", "https://");
+  if (url) execCmd("createLink", url);
+}
+
+function toggleSource() {
+  _sourceMode = !_sourceMode;
+  const editor = document.getElementById("page-editor");
+  const source = document.getElementById("page-source");
+  const btn    = document.getElementById("source-toggle");
+
+  if (_sourceMode) {
+    source.value = editor.innerHTML;
+    editor.style.display = "none";
+    source.style.display = "block";
+    btn.style.color = "var(--purple-light)";
+    btn.style.background = "var(--purple-dim)";
+  } else {
+    editor.innerHTML = source.value;
+    source.style.display = "none";
+    editor.style.display = "block";
+    btn.style.color = "";
+    btn.style.background = "";
+  }
+}
+
+// ── Chart helper ──────────────────────────────────────────────────────
+function drawBarChart(svgId, data, color, W, H) {
+  const svg = document.getElementById(svgId); if (!svg) return;
+  W=W||600; H=H||180;
+  const pad=40, maxVal=Math.max(...data.map((d)=>d.value)), barW=(W-pad*2)/data.length, chartH=H-40;
+  svg.innerHTML = data.map((d,i)=>{
+    const bh=(d.value/maxVal)*chartH, x=pad+i*barW+barW*0.15, y=H-bh-20, bw=barW*0.7;
+    return `<rect class="chart-bar" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4" fill="${color}" opacity="0.85"><title>${d.label}: $${d.value.toLocaleString()}</title></rect>
+      <text x="${x+bw/2}" y="${H-4}" text-anchor="middle" font-size="9" fill="#6B7280">${d.label}</text>
+      <text x="${x+bw/2}" y="${y-5}" text-anchor="middle" font-size="9" fill="#9999bb">$${(d.value/1000).toFixed(1)}K</text>`;
+  }).join("");
+}
+
+// ── Users Table ───────────────────────────────────────────────────────
+let allUsers = [];
+async function loadUsers() {
+  if (API.isReady()) {
+    const data = await API.getAdminUsers();
+    // Fetch emails from auth (admin only via service role — not available client-side, show id instead)
+    allUsers = (data || []).map((u) => ({ ...u, email: u.handle || u.id.slice(0,8)+"…" }));
+  } else {
+    allUsers = Auth.getAllUsers();
+  }
+  renderUsers();
+}
+
+function renderUsers(filter, roleFilter) {
+  const filtered = allUsers.filter((u) => {
+    const q = (filter||"").toLowerCase();
+    return (!q || (u.name||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q))
+        && (!roleFilter || u.role === roleFilter);
+  });
   document.getElementById("st-users").textContent   = allUsers.length;
   document.getElementById("st-sellers").textContent  = allUsers.filter((u)=>u.role==="seller").length;
   document.getElementById("badge-users").textContent = allUsers.length;
@@ -1031,7 +1128,7 @@ async function saveCurrent() {
 async function toggleBan(userId, isBanned) {
   const newStatus = isBanned ? "active" : "banned";
   if (API.isReady()) {
-    // API endpoint needed for user status
+    await API.updateUserStatus(userId, newStatus);
     const u = allUsers.find((u) => u.id === userId);
     if (u) u.status = newStatus;
   } else {

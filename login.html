@@ -801,19 +801,9 @@
       showError(panel + '-login-error', 'Enter your email address first, then click Forgot password.');
       return;
     }
-    if (true) {
-      showError(panel + '-login-error', 'Supabase not configured. Password reset requires a live backend.');
-      return;
-    }
-    const redirectUrl = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
-      ? window.location.origin + '/reset-password.html'
-      : 'http://192.168.1.93:8080/reset-password.html';
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
-    if (error) {
-      showError(panel + '-login-error', error.message);
+    const res = await Auth.resetPassword(email);
+    if (!res.ok) {
+      showError(panel + '-login-error', res.error || 'Failed to send reset email');
     } else {
       showSuccess('📧 Password reset email sent to ' + email + '. Check your inbox!');
     }

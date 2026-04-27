@@ -37,5 +37,17 @@ export default async function handler(req, res) {
     }
   }
 
+  if (action === 'users') {
+    if (req.method === 'GET') {
+      const rows = await sql`SELECT id, name, email, role, status, created_at, handle FROM users ORDER BY created_at DESC`;
+      return res.json(rows);
+    }
+    if (req.method === 'PUT') {
+      const { id, status } = req.body;
+      const [user] = await sql`UPDATE users SET status = ${status} WHERE id = ${id} RETURNING *`;
+      return res.json({ ok: true, user });
+    }
+  }
+
   res.status(404).json({ error: 'Unknown action' });
 }

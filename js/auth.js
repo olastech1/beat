@@ -45,6 +45,14 @@ const Auth = (() => {
     _clear();
   }
 
+  async function resetPassword(email) {
+    return _post('/api/auth?action=reset-password', { email });
+  }
+
+  async function updatePassword(email, token, password) {
+    return _post('/api/auth?action=update-password', { email, token, password });
+  }
+
   // Sync — reads localStorage cache
   function getSession() {
     const s = localStorage.getItem(SESSION_KEY);
@@ -90,6 +98,6 @@ const Auth = (() => {
   function getAllUsers() { return []; }
   function updateUserStatus() {}
 
-  return { register, login, logout, getSession, getSessionAsync, requireRole,
+  return { register, login, logout, resetPassword, updatePassword, getSession, getSessionAsync, requireRole,
            getInitials, getRoleBadge, getAllUsers, updateUserStatus };
 })();

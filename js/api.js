@@ -131,6 +131,14 @@ const API = (() => {
   async function rejectBeat(id)   { return apiFetch('/api/admin?action=beats', { method: 'PUT', body: { id, status: 'inactive' } }); }
   async function deleteBeat(id)   { return apiFetch('/api/admin?action=beats', { method: 'DELETE', body: { id } }); }
 
+  async function getAdminUsers() {
+    try { return await apiFetch('/api/admin?action=users'); }
+    catch { return []; }
+  }
+  async function updateUserStatus(id, status) {
+    return apiFetch('/api/admin?action=users', { method: 'PUT', body: { id, status } });
+  }
+
   async function getSellerStats() {
     try { return await apiFetch('/api/seller'); }
     catch { return { beats:0, revenue:0, sales:0, orders:[] }; }
@@ -167,6 +175,7 @@ const API = (() => {
     getProfile, updateProfile,
     uploadFile,
     getAdminStats, getAdminBeats, approveBeat, rejectBeat, deleteBeat,
+    getAdminUsers, updateUserStatus,
     getSellerStats, getMyBeats,
     saveSetting, getSetting,
     // Legacy aliases used in existing code
