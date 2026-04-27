@@ -7,3 +7,5 @@ greeting_app/
 
 # Supabase credentials — copy js/supabase.example.js → js/supabase.js and add your keys
 js/supabase.js
+node_modules/
+.env.local
