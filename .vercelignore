@@ -8,6 +8,4 @@ node_modules/
 *.ts
 
 # Dev files
-package.json
-package-lock.json
 README.md
