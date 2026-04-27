@@ -49,5 +49,80 @@ export default async function handler(req, res) {
     }
   }
 
+  if (action === 'orders') {
+    const rows = await sql`
+      SELECT o.*, b.title as beat_title, bu.name as buyer_name, pu.name as producer_name
+      FROM orders o
+      LEFT JOIN beats b ON o.beat_id = b.id
+      LEFT JOIN users bu ON o.buyer_id = bu.id
+      LEFT JOIN users pu ON o.producer_id = pu.id
+      ORDER BY o.created_at DESC
+      LIMIT 100
+    `;
+    const formatted = rows.map(r => ({
+      id: r.id,
+      amount: r.amount,
+      license_type: r.license_type,
+      status: r.status,
+      created_at: r.created_at,
+      beats: { title: r.beat_title },
+      buyer: { name: r.buyer_name },
+      producer: { name: r.producer_name }
+    }));
+    return res.json(formatted);
+  }
+
+  if (action === 'payouts') {
+    if (req.method === 'GET') {
+      const filter = req.query.filter || 'all';
+      // Check if payouts table exists, if not return empty
+      try {
+        const rows = filter === 'all'
+          ? await sql`SELECT p.*, u.name as seller_name, u.email as seller_email FROM payouts p LEFT JOIN users u ON p.seller_id = u.id ORDER BY p.created_at DESC LIMIT 100`
+          : await sql`SELECT p.*, u.name as seller_name, u.email as seller_email FROM payouts p LEFT JOIN users u ON p.seller_id = u.id WHERE p.status = ${filter} ORDER BY p.created_at DESC LIMIT 100`;
+        return res.json(rows);
+      } catch (e) {
+        // payouts table might not exist yet
+        return res.json([]);
+      }
+    }
+    if (req.method === 'PUT') {
+      const { id, status, note } = req.body;
+      try {
+        const [payout] = await sql`UPDATE payouts SET status = ${status}, admin_note = ${note||null}, reviewed_at = NOW() WHERE id = ${id} RETURNING *`;
+        return res.json({ ok: true, payout });
+      } catch (e) {
+        return res.json({ ok: false, error: e.message });
+      }
+    }
+  }
+
+  if (action === 'pages') {
+    if (req.method === 'GET') {
+      const slug = req.query.slug;
+      try {
+        const [page] = await sql`SELECT * FROM site_pages WHERE slug = ${slug} LIMIT 1`;
+        return res.json(page || null);
+      } catch {
+        return res.json(null);
+      }
+    }
+    if (req.method === 'POST') {
+      const { slug, title, tag, subtitle, content, copyright } = req.body;
+      try {
+        const [page] = await sql`
+          INSERT INTO site_pages (slug, title, tag, subtitle, content, copyright, updated_at)
+          VALUES (${slug}, ${title}, ${tag}, ${subtitle}, ${content}, ${copyright}, NOW())
+          ON CONFLICT (slug) DO UPDATE SET title=EXCLUDED.title, tag=EXCLUDED.tag, subtitle=EXCLUDED.subtitle,
+            content=EXCLUDED.content, copyright=EXCLUDED.copyright, updated_at=NOW()
+          RETURNING *
+        `;
+        return res.json({ ok: true, page });
+      } catch (e) {
+        return res.json({ ok: false, error: e.message });
+      }
+    }
+  }
+
   res.status(404).json({ error: 'Unknown action' });
 }

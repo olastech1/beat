@@ -990,9 +990,9 @@ async function saveCurrent() {
     localStorage.setItem("bm_page_" + slug, JSON.stringify({ slug, title, tag, subtitle, content, copyright }));
   } catch(e) {}
 
-  // If Supabase not ready, confirm localStorage only
+  // If API not ready, confirm localStorage only
   if (!API.isReady()) {
-    msg.textContent = "⚠️ Saved locally only — add Supabase keys to persist";
+    msg.textContent = "⚠️ Saved locally only";
     msg.style.color = "var(--amber)";
     msg.style.display = "block";
     setTimeout(() => msg.style.display = "none", 5000);
@@ -1003,15 +1003,10 @@ async function saveCurrent() {
   btn.disabled = true;
 
   try {
-    const error = null; // Removed supabase dependency. Site pages API endpoint needed.
-    // If you want to enable site pages, create a POST /api/admin?action=pages endpoint
+    const result = await API.savePage(slug, { title, tag, subtitle, content, copyright });
 
-    if (error) {
-      console.error("savePage error:", error);
-      let friendly = error.message;
-      if (error.code === "42P01") friendly = "Table not found — run site_pages SQL in Supabase first.";
-      else if (error.code === "42501" || friendly.includes("policy")) friendly = "Permission denied — log in as Admin via Supabase.";
-      msg.textContent = "❌ " + friendly;
+    if (!result || result.ok === false) {
+      msg.textContent = "❌ " + (result?.error || 'Save failed');
       msg.style.color = "var(--red)";
     } else {
       msg.textContent = "✓ Saved to Database!";

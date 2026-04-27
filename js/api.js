@@ -139,6 +139,33 @@ const API = (() => {
     return apiFetch('/api/admin?action=users', { method: 'PUT', body: { id, status } });
   }
 
+  async function getAdminOrders() {
+    try { return await apiFetch('/api/admin?action=orders'); }
+    catch { return []; }
+  }
+
+  async function getAllPayouts(filter = 'all') {
+    try { return await apiFetch(`/api/admin?action=payouts&filter=${filter}`); }
+    catch { return []; }
+  }
+
+  async function reviewPayout(id, status, note) {
+    try {
+      const data = await apiFetch('/api/admin?action=payouts', { method: 'PUT', body: { id, status, note } });
+      return data;
+    } catch (err) { return { ok: false, error: err.message }; }
+  }
+
+  async function getPage(slug) {
+    try { return await apiFetch(`/api/admin?action=pages&slug=${slug}`); }
+    catch { return null; }
+  }
+
+  async function savePage(slug, fields) {
+    try { return await apiFetch('/api/admin?action=pages', { method: 'POST', body: { slug, ...fields } }); }
+    catch (err) { return { ok: false, error: err.message }; }
+  }
+
   async function getSellerStats() {
     try { return await apiFetch('/api/seller'); }
     catch { return { beats:0, revenue:0, sales:0, orders:[] }; }
@@ -175,7 +202,9 @@ const API = (() => {
     getProfile, updateProfile,
     uploadFile,
     getAdminStats, getAdminBeats, approveBeat, rejectBeat, deleteBeat,
-    getAdminUsers, updateUserStatus,
+    getAdminUsers, updateUserStatus, getAdminOrders,
+    getAllPayouts, reviewPayout,
+    getPage, savePage,
     getSellerStats, getMyBeats,
     saveSetting, getSetting,
     // Legacy aliases used in existing code
